@@ -52,8 +52,10 @@ class ExactorWAFAgent(BaseWAFAgent):
             proof_latex=proof.formal_proof_latex,
             is_correct=is_correct,
             extra_metadata={
-                "engine": "SAT-Invariant-V1",
+                "engine": "SAT-Certainty-Islands-V1",
                 "rules_evaluated": len(self.engine.KNOWN_RULES),
+                "islands_evaluated": len(self.engine.CERTAINTY_ISLANDS),
+                "active_islands": proof.active_islands,
                 "causal_proof": True,
                 "token_count": len(proof.active_tokens),
             }

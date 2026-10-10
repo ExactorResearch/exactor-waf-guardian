@@ -59,6 +59,7 @@ def get_rules():
     rules = [
         {
             "rule_id": r.rule_id,
+            "island_id": r.island_id,
             "category": r.category.value,
             "name": r.name,
             "description": r.description,
@@ -68,6 +69,23 @@ def get_rules():
         for r in ExactorWAFSATEngine.KNOWN_RULES.values()
     ]
     return {"status": "ok", "count": len(rules), "rules": rules}
+
+
+@app.get("/api/waf/islands")
+def get_islands():
+    """Returns the catalog of Certainty Islands (Islas de Certeza)."""
+    islands = [
+        {
+            "island_id": isl.island_id,
+            "name": isl.name,
+            "category": isl.category.value,
+            "description": isl.description,
+            "formal_invariant": isl.formal_invariant,
+            "confidence": isl.confidence,
+        }
+        for isl in ExactorWAFSATEngine.CERTAINTY_ISLANDS.values()
+    ]
+    return {"status": "ok", "count": len(islands), "islands": islands}
 
 
 @app.get("/api/waf/samples")

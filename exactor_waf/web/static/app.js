@@ -165,6 +165,15 @@ function renderSATProof(exactorDecision) {
 
   document.getElementById('proof-timing-badge').textContent = `⚡ Verified in ${exactorDecision.latency_ms} ms`;
 
+  // Render active Certainty Islands
+  const islandsList = document.getElementById('proof-islands-list');
+  const activeIslands = exactorDecision.extra_metadata?.active_islands || [];
+  if (islandsList) {
+    islandsList.innerHTML = activeIslands.length > 0
+      ? activeIslands.map(i => `<span class="island-chip">🏝️ ${i}</span>`).join('')
+      : '<span class="island-chip island-chip-benign">🏝️ ISLAND-BENIGN (Whitelisted Grammar)</span>';
+  }
+
   // Render tokens
   const tokenList = document.getElementById('proof-tokens-list');
   tokenList.innerHTML = exactorDecision.active_tokens.length > 0
