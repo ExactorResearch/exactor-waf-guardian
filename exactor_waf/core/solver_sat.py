@@ -377,25 +377,28 @@ class ExactorWAFSATEngine:
         is_attack = len(unique_rules) > 0
         primary_category = unique_rules[0].category if is_attack else AttackCategory.BENIGN
 
-        # Generate LaTeX formal proof with Certainty Islands
+        # Generate clean LaTeX formal proof with properly escaped tokens and Certainty Islands
         if is_attack:
             island_str = r", ".join([f"\\mathcal{{I}}_{{\\text{{{i.replace('ISLAND-', '')}}}}}" for i in unique_islands])
-            rule_names = r" \lor ".join([f"\\text{{{r.rule_id}}}" for r in unique_rules])
+            rule_names = r" \lor ".join([f"\\texttt{{{r.rule_id}}}" for r in unique_rules])
+            safe_tokens = r", ".join([f"\\texttt{{{t.replace('_', r'\_')}}}" for t in unique_tokens])
+            safe_category = primary_category.value.upper().replace('_', r'\_')
+            
             latex_proof = (
                 r"\begin{aligned}"
-                rf"\text{{Certainty Islands}} &: \{{{island_str}\}} \subset \mathcal{{I}}_{{\text{{SAT}}}} \\"
-                rf"\text{{Extracted Tokens}} &: \mathcal{{T}} = \{{{', '.join(unique_tokens)}\}} \\"
-                rf"\text{{Invariant Clause}} &: \mathcal{{C}}_{{\text{{WAF}}}} \equiv \neg ({rule_names}) \\"
-                rf"\text{{Island SAT Eval}} &: \text{{Eval}}(\mathcal{{C}}_{{\text{{WAF}}}}, \mathcal{{T}}) \equiv \mathbf{{FALSE}} \implies \mathbf{{BLOCK\ [{primary_category.value.upper()}]}}"
+                rf"\mathbf{{Certainty\ Island}} &: \{{{island_str}\}} \subset \mathcal{{I}}_{{\text{{SAT}}}} \\[4pt]"
+                rf"\mathbf{{Active\ Tokens}} &: \mathcal{{T}} = \{{{safe_tokens}\}} \\[4pt]"
+                rf"\mathbf{{Invariant\ Rule}} &: \mathcal{{C}}_{{\text{{WAF}}}} \equiv \neg ({rule_names}) \\[4pt]"
+                rf"\mathbf{{SAT\ Evaluation}} &: \text{{Eval}}(\mathcal{{C}}_{{\text{{WAF}}}}, \mathcal{{T}}) \equiv \mathbf{{FALSE}} \implies \mathbf{{BLOCK\ [{safe_category}]}}"
                 r"\end{aligned}"
             )
         else:
             deduction_steps.append("[ISLAND-BENIGN] All syntactic AST tokens evaluate to clean grammar bounds; SAT invariant holds.")
             latex_proof = (
                 r"\begin{aligned}"
-                r"\text{{Grammar Status}} &: \mathcal{T} \subset \mathcal{L}_{\text{Benign}} \\"
-                r"\text{{Certainty Island}} &: \forall \mathcal{I} \in \mathcal{I}_{\text{SAT}}, \text{Eval}(\mathcal{I}, \mathcal{T}) = \text{TRUE} \\"
-                r"\text{{Result}} &: \mathbf{ALLOW\ [BENIGN\ TRAFFIC]}"
+                r"\mathbf{Grammar\ Status} &: \mathcal{T} \subset \mathcal{L}_{\text{Benign}} \\[4pt]"
+                r"\mathbf{Certainty\ Island} &: \forall \mathcal{I} \in \mathcal{I}_{\text{SAT}}, \; \text{Eval}(\mathcal{I}, \mathcal{T}) = \text{TRUE} \\[4pt]"
+                r"\mathbf{SAT\ Evaluation} &: \text{Eval}(\mathcal{C}_{\text{WAF}}, \mathcal{T}) \equiv \mathbf{TRUE} \implies \mathbf{ALLOW\ [BENIGN\ TRAFFIC]}"
                 r"\end{aligned}"
             )
 

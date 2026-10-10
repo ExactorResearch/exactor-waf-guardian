@@ -574,15 +574,29 @@ input:focus, select:focus, textarea:focus {
 }
 
 .katex-render-box {
-  background: rgba(6, 10, 18, 0.9);
-  border: 1px solid var(--border-color);
+  background: rgba(4, 8, 16, 0.95);
+  border: 1px solid rgba(6, 182, 212, 0.25);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
+  padding: 1.5rem;
   overflow-x: auto;
-  min-height: 120px;
+  min-height: 130px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+.katex-render-box .katex-display {
+  margin: 0 !important;
+  width: 100%;
+  text-align: left;
+}
+
+.katex-render-box .katex {
+  color: #e2e8f0;
 }
 
 /* Live Duel Section */
