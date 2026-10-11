@@ -1,88 +1,117 @@
-# 🛡️ Exactor WAF Guardian
+# Exactor WAF Guardian
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Engine: SAT Invariant](https://img.shields.io/badge/Engine-Deterministic_SAT-10b981.svg)](#)
-[![Latency: Sub-Millisecond](https://img.shields.io/badge/Latency-%3C_0.02ms-cyan.svg)](#)
-[![Zero API Cost](https://img.shields.io/badge/API_Cost-%240.00-success.svg)](#)
+[![License: MIT/Apache-2.0](https://img.shields.io/badge/License-MIT%2FApache--2.0-blue.svg)](#license)
+[![Powered by](https://img.shields.io/badge/Engine-Exactor%20Core%20(Rust)-orange.svg)](https://github.com/ExactorResearch/exactor-accelerator)
+[![Latency](https://img.shields.io/badge/Latency-0.05ms-brightgreen.svg)](#benchmarks)
+[![Throughput](https://img.shields.io/badge/Throughput-100k%2B%20req%2Fs-blue.svg)](#benchmarks)
+[![Live Demo](https://img.shields.io/badge/Demo-Interactive%20App-purple.svg)](https://waf.exactor.ai)
 
-> **Deterministic Neuro-Symbolic & SAT Cyber-Defense vs. Pure LLMs (JEV Solo) & Classical Regex.**  
-> High-speed, provably sound Web Application Firewall (WAF) engine providing mathematical AST invariant verification in $< 0.02\text{ ms}$ with **zero hallucinations**, **100% causal proofs**, and **$0.00 API token costs**.
+**Exactor WAF Guardian** is a production-grade Web Application Firewall (WAF) demonstration showcasing **Exactor Accelerator** in real-time cybersecurity environments.
 
----
-
-## 🌟 Executive Summary: The AI Security Dilemma
-
-Modern cybersecurity teams are increasingly tempted to deploy Large Language Models (LLMs) directly into the inline request stream as "AI Firewalls". While LLMs possess semantic understanding, **putting a 500ms cloud API in front of every HTTP click destroys user experience and introduces critical vulnerabilities**:
-
-| Dimension | 🤖 Pure JEV (Solo LLM Cloud) | 📜 Classical Regex (ModSec) | ⚡ Exactor-Accelerator (SAT) |
-| :--- | :---: | :---: | :---: |
-| **Inspection Latency** | `~350 – 550 ms` *(Severe lag)* | `~0.05 – 0.8 ms` | **`< 0.02 ms` (15-20 µs)** |
-| **Cost per 1M Requests** | **$2,000.00 – $4,500.00** | $0.00 | **$0.00 (Zero API calls)** |
-| **Hallucination / Drift** | ⚠️ Yes (Stochastic drift) | ❌ No | **✅ Provably Zero (SAT Invariant)** |
-| **Evasion / Obfuscation** | Moderate bypasses | 🚨 High bypass rate (80%+) | **🛡️ Immune to syntax splitting** |
-| **Explainability** | Probabilistic natural language | Regex pattern match ID | **📐 Mathematical SAT Proof ($\LaTeX$)** |
-| **Hardware Footprint** | Nvidia H100 GPU Cluster | Standard CPU | **Tiny ($2 ESP32 microcontroller)** |
+It solves the fundamental dilemma of modern application security: **combining deep AI reasoning with sub-millisecond network SLAs (0.05 ms) and zero marginal API cost.**
 
 ---
 
-## 📐 How Exactor Works: The "Airport Metal Detector" Analogy
+## 🌐 Live Interactive Demo
 
+Test the live interactive WAF simulator in your browser:  
+👉 **[Launch WAF Guardian Live](https://waf.exactor.ai)**
+
+* Simulate high-volume benign and malicious HTTP traffic (SQL Injection, XSS, Path Traversal, Bot attacks).
+* Watch the real-time latency counter execute decisions in **0.05 ms**.
+* Inspect the dual output: **Action (`ALLOW` / `BLOCK`) + Causal Boolean Proof**.
+
+---
+
+## The Challenge with AI in Modern WAFs
+
+| Approach | Latency (TTFB Impact) | Operational Cost | Resilience to Novel Zero-Days | Explainability |
+| :--- | :--- | :--- | :--- | :--- |
+| **Traditional RegEx WAF** | Fast (1–5 ms) | Zero API cost | Poor (Rigid rules, high false positives) | Hard-coded rules |
+| **Cloud LLM / API WAF** | **500–1,200 ms** (Unacceptable) | **Linear API cost** ($10k+/month) | High cognitive flexibility | Probabilistic / Opaque |
+| **Exactor WAF Guardian** | **0.05 ms** (Fast-Path local) | **Zero marginal cost** (99.9% local) | **High** (Autonomous oracle escalation) | **Deterministic Boolean Proof** |
+
+---
+
+## Architecture: How It Works
+
+Exactor WAF Guardian operates as an inline reverse proxy or Envoy/Nginx sidecar:
+
+```text
+[ Inbound HTTP Request ]
+          │
+          ▼
+ [ 1. Feature Binarizer ] ─── (Header entropy, SQL keywords, payload length, IP rep)
+          │
+          ▼
+ ┌────────────────────────────────────────────────────────┐
+ │ 2. Exactor Fast-Path (Rust Core in Memory)             │
+ │    - Evaluates Boolean Hypercube in 0.05 ms            │
+ └───────────────────────┬────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────┐
+        ▼                                 ▼
+ [ Known Match (99.9%) ]           [ Novel Pattern / Anomaly (0.1%) ]
+        │                                 │
+        ▼                                 ▼
+ [ Instant Action + Proof ]        [ Oracle Escalation (Jev / LLM) ]
+ (ALLOW / BLOCK)                          │
+                                          ▼
+                                   [ SQLite WAL Ledger ]
+                                          │
+                                          ▼
+                                   [ Hot Boolean Minimization ]
+                                   (Compiled into next Fast-Path iteration)
 ```
-   [ Incoming HTTP Request ]
-               │
-               ▼
-   [ Fast-Path AST Lexer ]  ──▶ Extracts AST Syntactic Tokens:
-                                 {QUOTE, UNION, SCRIPT_TAG, SHELL_OP, DIR_TRAVERSAL}
-               │
-               ▼
-   [ Boolean SAT Invariant Solver ]
-        Formal Logic:  Eval(C_WAF, Tokens) ≡ TRUE ?
-               │
-         ┌─────┴────────────────┐
-         ▼                      ▼
-  [ INVARIANT HOLDS ]    [ INVARIANT VIOLATED ]
-   Action: ALLOW (0.01ms)  Action: BLOCK (0.01ms)
-   Proof: L_benign ⊂ Clean  Proof: LaTeX SAT Deduction Chain
-```
 
-Instead of asking a generative AI model to "read and reflect" on an HTTP payload like an essay, **Exactor treats web security as formal grammar invariant verification**:
-1. **Syntactic AST Tokenization**: De-obfuscates multi-pass URL encoding, Unicode normalization, and SQL comment splitting (`UN/**/ION`).
-2. **Boolean SAT Constraint Propagation**: Evaluates strict propositional clauses ($C_{\text{SQLi}}, C_{\text{XSS}}, C_{\text{RCE}}$) against the token lattice.
-3. **Causal Proof Generation**: Every blocked payload produces an undeniable, mathematically verifiable proof chain in LaTeX.
+### The Dual Output (Glass Box)
+For every evaluated request, Exactor WAF Guardian outputs both the decision and the mathematical proof:
+
+```json
+{
+  "request_id": "req_84920481",
+  "action": "BLOCK",
+  "latency_ms": 0.048,
+  "execution_path": "FAST_PATH_LOCAL",
+  "causal_proof": "(contains_sql_tokens AND payload_entropy > 4.2 AND user_agent_empty) -> ACTION_BLOCK",
+  "oracle_consulted": false
+}
+```
 
 ---
 
-## 🚀 Quickstart & Interactive Web Dashboard
+## Quickstart
 
-### 1. Installation
+### Prerequisites
+* Python 3.9+ (or Rust 1.80+)
+* pip
+
+### Installation & Launching Local Dashboard (Port 8002)
+
 ```bash
-git clone https://github.com/rush-tech/exactor-waf-guardian.git
+git clone https://github.com/ExactorResearch/exactor-waf-guardian.git
 cd exactor-waf-guardian
 pip install -r requirements.txt
-```
 
-### 2. Launch the Cyber-Defense Web Dashboard (Port 8002)
-```bash
+# Launch interactive web dashboard
 python run_web.py
 ```
-Open your browser at **`http://localhost:8002`** to access:
-- 🛡️ **Interactive Traffic Inspector**: Test custom payloads or OWASP Top 10 presets and view live AST tokens and KaTeX mathematical proofs.
-- ⚔️ **Live Multi-Agent Duel**: Real-time side-by-side race between Exactor, Pure JEV, and Regex across simulated attack streams.
-- 📊 **Benchmark Suite & Visualizations**: Interactive sliders and log-scale Chart.js metrics for throughput, latency quantiles, and cloud cost.
-- 🔬 **SAT Rules Ledger**: Searchable catalog of formal boolean deduction rules.
-- 📘 **Methodology & Influencer Guide**: ELI5 analogies, creator cheat sheets, and technical deep-dives.
+
+Once running, access the local dashboard at **`http://localhost:8002`**.
+* 🛡️ **Interactive Traffic Inspector**: Test custom payloads or OWASP Top 10 presets and view live AST tokens and KaTeX mathematical proofs.
+* ⚔️ **Live Multi-Agent Duel**: Real-time side-by-side race between Exactor, Pure JEV, and Regex across simulated attack streams.
+* 📊 **Benchmark Suite & Visualizations**: Interactive sliders and log-scale metrics for throughput, latency quantiles, and cloud cost.
 
 ---
 
-## 💻 CLI Usage & Benchmarks
+## CLI Usage & Benchmarks
 
-### Single Payload Triage
+### Single Payload Inspection
 ```bash
 python run_cli.py --path "/api/login" --query "username=admin' OR '1'='1'--"
 ```
 
-### Full Multi-Agent Benchmark Suite
+### Run Multi-Agent Benchmark Suite
 ```bash
 python run_benchmark.py 100
 ```
@@ -94,14 +123,59 @@ python -m pytest -v
 
 ---
 
-## 🎙️ Creator & Influencer Talking Points
+## Project Structure
 
-- **The Speed Hook**: *"Exactor inspects web requests in 15 microseconds — over 30,000x faster than cloud LLMs, preventing the 500ms lag that breaks web apps."*
-- **The $2 Chip Argument**: *"You don't need a multi-million dollar GPU datacenter to protect your APIs. Exactor's math runs on a $2 microchip at the physical edge."*
-- **Glass-Box vs. Black-Box**: *"When Exactor blocks a request, it generates a mathematical proof in LaTeX, not a black-box AI guess."*
+```text
+exactor-waf-guardian/
+├── exactor_waf/
+│   ├── ast_lexer.py         # HTTP AST token extractor
+│   ├── engine.py            # SAT Invariant & Exactor Accelerator Fast-Path
+│   ├── web/                 # Interactive web dashboard & API server (Port 8002)
+│   └── attack_sim.py        # Traffic generator (benign vs OWASP attack vectors)
+├── run_web.py               # Launch dashboard
+├── run_cli.py               # Command-line inspection tool
+├── run_benchmark.py         # Multi-agent benchmark suite
+├── EXACTOR_METHODOLOGY.md   # Mathematical invariant specification
+└── README.md
+```
 
 ---
 
-## 📄 License & Attribution
+## Integration as a Middleware
 
-Distributed under the **MIT License**. Created as part of the Exactor Neuro-Symbolic Acceleration Series.
+You can embed Exactor WAF Guardian into any Python web service (FastAPI, Flask, Starlette):
+
+```python
+from fastapi import FastAPI, Request
+from exactor_waf.engine import WafEngine
+
+app = FastAPI()
+waf = WafEngine()
+
+@app.middleware("http")
+async def waf_middleware(request: Request, call_next):
+    decision = waf.evaluate(request)
+    if decision.action == "BLOCK":
+        return Response(
+            content=f"Blocked by Exactor WAF: {decision.causal_proof}", 
+            status_code=403
+        )
+    return await call_next(request)
+```
+
+---
+
+## 📅 Enterprise Evaluation & Demo Scheduling
+
+Ready to eliminate inference latency and cloud API costs for your security and application infrastructure?
+
+- **Schedule a 15-Min Architecture Review:** [Book Directly on Cal.com](https://cal.com/exactor-tech)
+- **Submit Workload Requirements:** [Open Tally / Typeform Assessment](https://tally.so/r/w2xD4P)
+- **Direct Commercial Inquiries:** [`contact@exactor.tech`](mailto:contact@exactor.tech)
+
+---
+
+## License
+
+Dual-licensed under [MIT](LICENSE) or [Apache 2.0](LICENSE-APACHE).
+

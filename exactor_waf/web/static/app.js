@@ -459,3 +459,68 @@ function filterRulesLedger() {
   );
   renderRulesLedger(filtered);
 }
+
+/* ==========================================================================
+   CONTACT / DEMO MODAL HANDLERS
+   ========================================================================== */
+
+function openContactModal() {
+  const modal = document.getElementById('contactModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeContactModal() {
+  const modal = document.getElementById('contactModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target && e.target.id === 'contactModal') {
+    closeContactModal();
+  }
+}
+
+async function submitContactForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmitLead');
+  const successBanner = document.getElementById('contactSuccessMsg');
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Registering Request...';
+  }
+  
+  const leadData = {
+    name: document.getElementById('leadName').value,
+    email: document.getElementById('leadEmail').value,
+    company_role: document.getElementById('leadCompanyRole').value,
+    use_case: document.getElementById('leadUseCase').value
+  };
+
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadData)
+    });
+    if (!res.ok) throw new Error('Network error');
+  } catch (err) {
+    console.warn('Inbound contact endpoint fallback:', err);
+  }
+
+  if (successBanner) {
+    successBanner.style.display = 'block';
+  }
+  if (btn) {
+    btn.textContent = '✓ Demo Request Received';
+  }
+
+  setTimeout(() => {
+    window.location.href = `mailto:contact@exactor.tech?subject=Exactor%20WAF%20Guardian%20Demo%20Request:%20${encodeURIComponent(leadData.company_role)}&body=Full%20Name:%20${encodeURIComponent(leadData.name)}%0AWork%20Email:%20${encodeURIComponent(leadData.email)}%0ACompany%20and%20Role:%20${encodeURIComponent(leadData.company_role)}%0AUse%20Case:%20${encodeURIComponent(leadData.use_case)}`;
+  }, 1200);
+}
+

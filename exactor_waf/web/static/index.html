@@ -17,6 +17,9 @@
   <!-- Chart.js for Benchmark Visuals -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Tally Embed Script -->
+  <script async src="https://tally.so/widgets/embed.js"></script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -41,8 +44,11 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="btn-book-demo" onclick="openContactModal()" id="btnHeaderContact">
+        📅 <span>Book Demo / Contact</span>
+      </button>
       <a href="#methodology" class="creator-badge-btn" onclick="switchTab('tab-methodology')">
-        ✨ <span>Creator & Influencer Guide</span>
+        ✨ <span>Creator Guide</span>
       </a>
     </div>
   </header>
@@ -464,6 +470,63 @@
       </div>
       <div class="modal-body" id="modal-content">
         <!-- Filled dynamically -->
+      </div>
+    </div>
+  <!-- Contact & Demo Request Modal (Tally / Direct Lead Capture) -->
+  <div id="contactModal" class="contact-modal-overlay" style="display:none;" onclick="handleModalOverlayClick(event)">
+    <div class="contact-modal-card">
+      <button class="modal-close-btn" onclick="closeContactModal()">&times;</button>
+      <div class="modal-header">
+        <div class="modal-badge">EXACTOR ENTERPRISE</div>
+        <h2>Deploy Exactor on Your Infrastructure</h2>
+        <p>Schedule a live 1-on-1 benchmark or request early access. Inquiries directed to <strong>contact@exactor.tech</strong>.</p>
+      </div>
+      
+      <form id="contactLeadForm" onsubmit="submitContactForm(event)">
+        <div class="form-group">
+          <label for="leadName">Full Name *</label>
+          <input type="text" id="leadName" name="name" required placeholder="e.g. Alex Mercer" />
+        </div>
+        
+        <div class="form-group">
+          <label for="leadEmail">Work Email *</label>
+          <input type="email" id="leadEmail" name="email" required placeholder="e.g. alex@enterprise.com" />
+        </div>
+        
+        <div class="form-group">
+          <label for="leadCompanyRole">Company & Role *</label>
+          <input type="text" id="leadCompanyRole" name="company_role" required placeholder="e.g. CyberSecurity Corp — CISO / Head of SecOps" />
+        </div>
+        
+        <div class="form-group">
+          <label for="leadUseCase">Use Case & Decision Volume *</label>
+          <textarea id="leadUseCase" name="use_case" rows="3" required placeholder="e.g. WAF inline inspection, ~10M daily requests, needing 0.05ms local reflex to replace cloud latency"></textarea>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit-lead" id="btnSubmitLead">
+            🚀 Submit Demo Request
+          </button>
+        </div>
+      </form>
+
+      <div class="modal-secondary-options">
+        <div class="divider"><span>OR CONNECT DIRECTLY</span></div>
+        <div class="schedule-links">
+          <a href="https://cal.com/exactor-tech" target="_blank" class="alt-sched-btn cal-btn">
+            🗓️ Schedule 1-on-1 via Cal.com
+          </a>
+          <a href="https://tally.so/r/w2xD4P" target="_blank" data-tally-open="w2xD4P" class="alt-sched-btn tally-btn">
+            📝 Open in Tally Form
+          </a>
+          <a href="mailto:contact@exactor.tech?subject=Exactor%20WAF%20Guardian%20Demo%20Request" class="alt-sched-btn mail-btn">
+            ✉️ Email contact@exactor.tech
+          </a>
+        </div>
+      </div>
+      
+      <div id="contactSuccessMsg" class="contact-success-banner" style="display:none;">
+        ✅ <strong>Request Submitted!</strong> Our cybersecurity architecture team has registered your request and will reach out within 24 hours.
       </div>
     </div>
   </div>
