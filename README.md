@@ -17,6 +17,97 @@ It implements deterministic Neuro-Symbolic SAT verification and formal **Certain
 
 ---
 
+## 🚀 Get Started (Inicio Rápido en 60 Segundos)
+
+Protege cualquier aplicación web, microservicio o API en menos de un minuto sin instalar compiladores ni dependencias externas.
+
+### 1. Elige tu método de despliegue preferido
+
+#### A. Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
+```bash
+curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
+```
+
+#### B. Windows Server (PowerShell como Administrador)
+```powershell
+irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
+```
+
+#### C. Docker Compose (Zero-Host Install)
+```bash
+docker compose up -d
+```
+
+#### D. Modo Portable / Binario Autónomo (Sin tocar servicios de sistema)
+Descarga el paquete precompilado desde [`dist/`](dist/) o Releases y ejecuta directamente:
+```bash
+# Windows
+.\exactor-waf-guardian.exe proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000
+
+# Linux
+./exactor-waf-guardian proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000
+```
+
+---
+
+### 2. Configura tu Aplicación Backend
+
+Por defecto, el WAF escucha en el puerto público `8080` y protege a tu aplicación que corre internamente en el puerto `3000`.  
+Puedes modificarlo editando `waf_config.toml` o por argumentos CLI:
+
+```toml
+# Puerto público que recibe el tráfico de Internet
+listen_addr = "0.0.0.0:8080"
+
+# Tu servidor backend real (Node.js, Python, Java, PHP, Go, etc.)
+upstream_url = "http://127.0.0.1:3000"
+
+# Modo de defensa: "block" (bloqueo perimetral activo) o "monitor" (detección dry-run)
+mode = "block"
+```
+
+---
+
+### 3. Prueba tu Primer Bloqueo con Demostración Formal
+
+Una vez que el WAF está corriendo, lanza estas pruebas desde cualquier terminal o navegador:
+
+#### ✅ Petición Legítima (Permitida y Acelerada)
+```bash
+curl -i http://localhost:8080/
+```
+> **Resultado:** HTTP `200 OK`, con la cabecera `X-Exactor-Protected: true` y una latencia de inspección inferior a $0.02\text{ ms}$.
+
+#### 🛑 Intento de Ataque SQL Injection (Bloqueado al Instante)
+```bash
+curl -i "http://localhost:8080/?id=1'%20OR%201=1--"
+```
+> **Resultado:** HTTP `403 Forbidden` en $< 0.05\text{ ms}$. El backend jamás recibe el ataque.  
+> La respuesta JSON contiene la prueba causal y la demostración formal en $\LaTeX$:
+> ```json
+> {
+>   "action": "BLOCK",
+>   "category": "sql_injection",
+>   "latency_us": 24.1,
+>   "causal_proof": "(TAUTOLOGY_EQUALS) violates [SAT-SQLI-01] -> ACTION_BLOCK",
+>   "formal_proof_latex": "\\begin{aligned} ... \\text{Eval}(\\mathcal{C}_{\\text{WAF}}, \\mathcal{T}) \\equiv \\mathbf{FALSE} \\implies \\mathbf{BLOCK} \\end{aligned}"
+> }
+> ```
+
+---
+
+### 4. Monitoreo y Telemetría en Tiempo Real
+
+El servidor incluye endpoints de observabilidad de alta frecuencia sin dependencias externas:
+- **Estado de Salud:** [`http://localhost:8080/health`](http://localhost:8080/health)
+- **Métricas de Rendimiento:** [`http://localhost:8080/api/waf/metrics`](http://localhost:8080/api/waf/metrics) (throughput, ataques bloqueados y latencia media en microsegundos).
+- **Inspección Rápida CLI (Sin levantar servidor):**
+  ```bash
+  exactor-waf-guardian inspect --query "id=1' OR 1=1--"
+  ```
+
+---
+
 ## 🏛️ System Architecture
 
 ```text
