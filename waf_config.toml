@@ -1,0 +1,32 @@
+# ==============================================================================
+# EXACTOR WAF GUARDIAN - PRODUCTION CONFIGURATION
+# Sub-Millisecond Deterministic SAT Cyber-Defense & Reverse Proxy
+# Powered by EXACTOR Core & exactor.tech Cloud Synthesis
+# ==============================================================================
+
+# Network listener for inbound HTTP traffic to be protected
+listen_addr = "0.0.0.0:8080"
+
+# Target upstream backend application (Nginx, Node, Python, Go, Java, PHP, etc.)
+upstream_url = "http://127.0.0.1:3000"
+
+# Defense mode:
+#   "block"   - Active perimeter defense: instantly drops attacks with HTTP 403
+#   "monitor" - Passive / dry-run mode: logs violations but allows traffic upstream
+mode = "block"
+
+# EXACTOR Core Cloud API URL for Autonomous Boolean Minimization
+# Cloud Service runs exactor-cloud-service-v128
+exactor_api_url = "https://exactor.tech/api/simplify"
+
+# EXACTOR Cloud API Token or Bearer Token (optional for public demo or set via EXACTOR_API_TOKEN)
+# exactor_api_token = "ek_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# SQLite WAL Ledger database location for audit logging and novel anomaly clustering
+database_path = "waf_ledger.db"
+
+# Autonomous background minimization sync interval in seconds (default: 300s / 5 mins)
+autonomous_sync_interval_secs = 300
+
+# Enable automatic hot minimization sync with https://exactor.tech
+auto_sync_enabled = true

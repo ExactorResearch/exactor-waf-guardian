@@ -1,0 +1,327 @@
+use clap::{Parser, Subcommand};
+use exactor_waf_guardian::api::create_api_router;
+use exactor_waf_guardian::ast::features::FeatureBinarizer;
+use exactor_waf_guardian::benchmark::BenchmarkSuite;
+use exactor_waf_guardian::cloud::{ExactorCloudClient, SimplifyRequest};
+use exactor_waf_guardian::config::WafConfig;
+use exactor_waf_guardian::engine::ExactorSatEngine;
+use exactor_waf_guardian::ledger::SqliteLedger;
+use exactor_waf_guardian::proxy::{proxy_handler, ProxyState};
+use exactor_waf_guardian::types::HttpRequestPayload;
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+use std::time::Instant;
+use tokio::time::{interval, Duration};
+use tracing::{info, warn};
+use tracing_subscriber::EnvFilter;
+
+#[derive(Parser, Debug)]
+#[command(
+    name = "exactor-waf-guardian",
+    author = "Exactor Team",
+    version = env!("CARGO_PKG_VERSION"),
+    about = "Production-grade, sub-millisecond SAT Web Application Firewall (WAF) & Reverse Proxy powered by EXACTOR Core and exactor.tech"
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+
+    /// Path to configuration TOML file
+    #[arg(short, long, global = true)]
+    config: Option<String>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Start the high-performance WAF reverse-proxy server (default)
+    Proxy {
+        /// Inbound listen address (e.g. 0.0.0.0:8080)
+        #[arg(short, long)]
+        listen: Option<String>,
+
+        /// Upstream target application URL (e.g. http://127.0.0.1:3000)
+        #[arg(short, long)]
+        upstream: Option<String>,
+
+        /// Defense mode: 'block' (active drop) or 'monitor' (dry-run detection)
+        #[arg(short, long)]
+        mode: Option<String>,
+    },
+
+    /// Inspect a single HTTP request payload and display formal mathematical proof
+    Inspect {
+        /// HTTP Method (GET, POST, etc.)
+        #[arg(short, long, default_value = "GET")]
+        method: String,
+
+        /// Request URI Path
+        #[arg(short, long, default_value = "/")]
+        path: String,
+
+        /// Query string (e.g. q=admin' OR 1=1--)
+        #[arg(short, long, default_value = "")]
+        query: String,
+
+        /// Request Body string
+        #[arg(short, long, default_value = "")]
+        body: String,
+    },
+
+    /// Force immediate exact Boolean simplification with https://exactor.tech
+    SyncSimplify {
+        /// Number of pending anomaly minterms to batch-simplify
+        #[arg(short, long, default_value_t = 100)]
+        limit: i64,
+    },
+
+    /// Run the multi-vector SAT engine performance benchmark
+    Benchmark {
+        /// Total request count for the benchmark run
+        #[arg(short, long, default_value_t = 10000)]
+        requests: usize,
+    },
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive("info".parse().unwrap()),
+        )
+        .init();
+
+    let cli = Cli::parse();
+    let mut config = WafConfig::load_or_default(cli.config.as_deref());
+
+    match cli.command {
+        Some(Commands::Inspect {
+            method,
+            path,
+            query,
+            body,
+        }) => {
+            run_cli_inspect(&method, &path, &query, &body);
+            Ok(())
+        }
+        Some(Commands::Benchmark { requests }) => {
+            BenchmarkSuite::run_benchmark(requests);
+            Ok(())
+        }
+        Some(Commands::SyncSimplify { limit }) => {
+            run_sync_simplify(&config, limit).await
+        }
+        Some(Commands::Proxy {
+            listen,
+            upstream,
+            mode,
+        }) => {
+            if let Some(l) = listen {
+                config.listen_addr = l;
+            }
+            if let Some(u) = upstream {
+                config.upstream_url = u;
+            }
+            if let Some(m) = mode {
+                config.mode = m;
+            }
+            run_server(config).await
+        }
+        None => {
+            // Default command is to run the server
+            run_server(config).await
+        }
+    }
+}
+
+/// Runs the server with Reverse Proxy, Management API, and Autonomous Minimization Loop.
+async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!(
+        r#"
+  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
+  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
+  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
+  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
+  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
+  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
+             WAF GUARDIAN - SERVER COMPONENT
+      Powered by EXACTOR Core & https://exactor.tech
+    "#
+    );
+
+    info!(target: "exactor::server", "Starting Exactor WAF Guardian Server v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::server", "Listen Address : {}", config.listen_addr);
+    info!(target: "exactor::server", "Upstream Target: {}", config.upstream_url);
+    info!(target: "exactor::server", "Defense Mode   : {}", config.mode.to_uppercase());
+    info!(target: "exactor::server", "Cloud API URL  : {}", config.exactor_api_url);
+    info!(target: "exactor::server", "SQLite Ledger  : {}", config.database_path);
+
+    let engine = Arc::new(ExactorSatEngine::new());
+    let ledger = SqliteLedger::init(&config.database_path).await?;
+    let cloud_client = ExactorCloudClient::new(
+        config.exactor_api_url.clone(),
+        config.exactor_api_token.clone(),
+    );
+
+    let proxy_state = Arc::new(ProxyState {
+        config: config.clone(),
+        engine: engine.clone(),
+        ledger: ledger.clone(),
+        cloud_client: cloud_client.clone(),
+        http_client: reqwest::Client::builder()
+            .timeout(Duration::from_secs(60))
+            .build()?,
+        start_time: Instant::now(),
+        counter_total: AtomicU64::new(0),
+        counter_blocked: AtomicU64::new(0),
+        counter_allowed: AtomicU64::new(0),
+        sum_latency_us: AtomicU64::new(0),
+    });
+
+    // Autonomous background minimization sync worker
+    if config.auto_sync_enabled && config.autonomous_sync_interval_secs > 0 {
+        let bg_ledger = ledger.clone();
+        let bg_engine = engine.clone();
+        let bg_cloud = cloud_client.clone();
+        let interval_secs = config.autonomous_sync_interval_secs;
+
+        tokio::spawn(async move {
+            let mut ticker = interval(Duration::from_secs(interval_secs));
+            loop {
+                ticker.tick().await;
+                if let Ok(pending) = bg_ledger.get_pending_anomalies(50).await {
+                    if !pending.is_empty() {
+                        info!(
+                            target: "exactor::sync",
+                            count = pending.len(),
+                            "Autonomous worker: Syncing novel anomaly minterms with https://exactor.tech"
+                        );
+                        let vars = FeatureBinarizer::get_variable_catalog(24);
+                        let req = SimplifyRequest {
+                            variables: vars.clone(),
+                            minterms: pending.clone(),
+                            dont_cares: None,
+                            format: Some("equation".to_string()),
+                        };
+                        match bg_cloud.simplify(&req).await {
+                            Ok(resp) => {
+                                let clauses = bg_cloud.compile_equation_to_clauses(&resp.result, &vars);
+                                for c in clauses {
+                                    bg_engine.register_dynamic_clause(c);
+                                }
+                                let _ = bg_ledger.record_simplification(&resp, vars.len(), pending.len()).await;
+                                let _ = bg_ledger.mark_anomalies_simplified(&pending).await;
+                                info!(
+                                    target: "exactor::sync",
+                                    reduction = %format!("{:.1}%", resp.reduction_percent),
+                                    "Autonomous worker: Hot Boolean Minimization complete. Invariants updated."
+                                );
+                            }
+                            Err(e) => {
+                                warn!(target: "exactor::sync", "Autonomous sync skipped or failed: {}", e);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Combine Management API and Proxy Router
+    let app = axum::Router::new()
+        .merge(create_api_router())
+        .fallback(proxy_handler)
+        .with_state(proxy_state);
+
+    let addr: SocketAddr = config.listen_addr.parse()?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(target: "exactor::server", "Exactor WAF Guardian Server ready and listening on http://{}", addr);
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
+
+    Ok(())
+}
+
+/// Standalone CLI single-payload inspector.
+fn run_cli_inspect(method: &str, path: &str, query: &str, body: &str) {
+    let payload = HttpRequestPayload {
+        id: uuid::Uuid::new_v4().to_string()[..8].to_string(),
+        method: method.to_string(),
+        path: path.to_string(),
+        query_string: query.to_string(),
+        headers: HashMap::new(),
+        body: body.to_string(),
+        client_ip: None,
+    };
+
+    let engine = ExactorSatEngine::new();
+    let proof = engine.evaluate_payload(&payload);
+
+    println!("\n🔍 Exactor WAF Guardian: Payload Inspection Report");
+    println!("============================================================");
+    println!("Request ID       : {}", proof.request_id);
+    println!("Target Path      : {}", payload.path);
+    println!("Query String     : {}", payload.query_string);
+    println!("Action Decision  : {:?}", proof.action);
+    println!("Attack Category  : {}", proof.category.display_name());
+    println!("Latency          : {:.2} µs ({:.4} ms)", proof.execution_time_us, proof.execution_time_us / 1000.0);
+    println!("Active Tokens    : {:?}", proof.active_tokens);
+    println!("Certainty Islands: {:?}", proof.active_islands);
+    println!("------------------------------------------------------------");
+    println!("Causal Proof     :\n{}", proof.causal_proof);
+    println!("------------------------------------------------------------");
+    println!("LaTeX Formal SAT Proof:\n{}", proof.formal_proof_latex);
+    println!("============================================================\n");
+}
+
+/// CLI command to trigger cloud simplification with https://exactor.tech.
+async fn run_sync_simplify(
+    config: &WafConfig,
+    limit: i64,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("⚡ Exactor WAF: Initiating Exact Boolean Simplification");
+    println!("   Target: {}", config.exactor_api_url);
+
+    let ledger = SqliteLedger::init(&config.database_path).await?;
+    let pending = ledger.get_pending_anomalies(limit).await?;
+
+    if pending.is_empty() {
+        println!("ℹ️  No pending novel anomalies found in {}.", config.database_path);
+        return Ok(());
+    }
+
+    println!("📥 Found {} anomaly minterms to simplify.", pending.len());
+    let cloud = ExactorCloudClient::new(
+        config.exactor_api_url.clone(),
+        config.exactor_api_token.clone(),
+    );
+
+    let vars = FeatureBinarizer::get_variable_catalog(24);
+    let req = SimplifyRequest {
+        variables: vars.clone(),
+        minterms: pending.clone(),
+        dont_cares: None,
+        format: Some("equation".to_string()),
+    };
+
+    let resp = cloud.simplify(&req).await?;
+
+    println!("\n✅ Cloud Simplification Succeeded!");
+    println!("   Reduction Percentage : {:.2}%", resp.reduction_percent);
+    println!("   Original Gates       : {}", resp.original_gates);
+    println!("   New Minimal Gates    : {}", resp.new_gates);
+    println!("   Cloud Execution Time : {} ms", resp.execution_time_ms);
+    println!("   SU Deducted          : {:?}", resp.su_used);
+    println!("   Minimized Equation   : {}", resp.result);
+
+    ledger.record_simplification(&resp, vars.len(), pending.len()).await?;
+    ledger.mark_anomalies_simplified(&pending).await?;
+    println!("💾 Ledger updated. Anomalies marked as SIMPLIFIED.");
+
+    Ok(())
+}

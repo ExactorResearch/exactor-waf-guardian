@@ -1,0 +1,43 @@
+[package]
+name = "exactor-waf-guardian"
+version = "0.1.0"
+edition = "2021"
+authors = ["Exactor Team"]
+license = "MIT OR Apache-2.0"
+description = "Production-grade, sub-millisecond SAT Web Application Firewall (WAF) reverse-proxy and agent with autonomous exact Boolean simplification via exactor.tech"
+
+[dependencies]
+# Async Runtime & Networking
+tokio = { version = "1.38", features = ["full"] }
+axum = { version = "0.7.5" }
+tower = { version = "0.4" }
+tower-http = { version = "0.5.2", features = ["cors", "trace", "timeout"] }
+http-body-util = "0.1"
+hyper = { version = "1.4", features = ["full"] }
+
+# HTTP Client for Upstream Proxying & Exactor Cloud API
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# Serialization & Config
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Database / Ledger
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Utilities
+regex = "1.10"
+percent-encoding = "2.3"
+uuid = { version = "1.7", features = ["v4"] }
+sha2 = "0.10"
+hex = "0.4"
+arc-swap = "1.7"

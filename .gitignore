@@ -26,3 +26,7 @@ wheels/
 htmlcov/
 .DS_Store
 *.log
+target/
+*.db
+*.db-wal
+*.db-shm
