@@ -6,10 +6,14 @@
 [![Throughput](https://img.shields.io/badge/Throughput-80k%2B%20req%2Fs-blue.svg)](#benchmarks)
 [![Synthesis](https://img.shields.io/badge/Synthesis-exactor.tech%20(v128)-purple.svg)](https://exactor.tech)
 [![Proof of Concept](https://img.shields.io/badge/PoC-Interactive%20Duel-success.svg)](PROOF_OF_CONCEPT.md)
+[![Epistemology](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
 
 **Exactor WAF Guardian** is a production-grade Web Application Firewall (WAF) reverse-proxy and server daemon engineered in **Rust**, accompanied by an empirical **Interactive Proof of Concept (PoC)** suite in Python.
 
 It implements deterministic Neuro-Symbolic SAT verification and formal **Certainty Islands (Islas de Certeza)** for real-time edge cybersecurity, resolving the fundamental trilemma of modern application security: **combining deep cognitive reasoning with sub-millisecond network SLAs (< 0.05 ms), 100% mathematically verifiable causal proofs, zero marginal inference cost, and autonomous Boolean logic minimization via [https://exactor.tech](https://exactor.tech).**
+
+> 📘 **Documentación Teórica Fundamental:**  
+> Para comprender cómo clasifica el WAF sin etiquetado humano manual y cómo se sintetizan y generalizan las reglas consumiendo Silicon Units (SU), consulta [Supervisión Axiomática y Síntesis Inductiva en EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
 
 ---
 

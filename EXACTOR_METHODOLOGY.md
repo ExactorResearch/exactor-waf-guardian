@@ -93,5 +93,11 @@ To communicate this technological breakthrough to a broad, non-technical audienc
 ---
 
 ## 5. Conclusion
-
+ 
 Exactor proves that **formal deterministic mathematics and propositional SAT invariants** vastly outperform black-box neural networks and brittle regular expressions for structural invariant verification in high-throughput, mission-critical systems.
+
+---
+
+### Further Reading
+- [Supervisión Axiomática y Síntesis Inductiva en EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md): Estudio a fondo sobre cómo aprende, clasifica y generaliza el WAF sin etiquetado humano manual mediante la reducción de mintérminos y consumo de Silicon Units (SU).
+- [Interactive Proof of Concept & Duel Suite](PROOF_OF_CONCEPT.md)
