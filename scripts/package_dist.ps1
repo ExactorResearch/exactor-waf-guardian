@@ -1,0 +1,122 @@
+# ==============================================================================
+# Exactor WAF Guardian - Windows Distribution Packager
+# Generates a standalone, zero-dependency ZIP bundle for client distribution.
+# ==============================================================================
+
+param(
+    [string]$Version = "v0.1.0",
+    [switch]$NoRebuild = $false
+)
+
+$ErrorActionPreference = "Stop"
+
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+$DistDir = "$ProjectRoot\dist"
+$StagingDir = "$DistDir\exactor-waf-guardian-$Version-windows-x86_64"
+$ZipFile = "$DistDir\exactor-waf-guardian-$Version-windows-x86_64.zip"
+
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "Packaging Exactor WAF Guardian for Windows ($Version)" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+
+# 1. Verify / Build Release Binary
+$ReleaseExe = ""
+if (Test-Path "$ProjectRoot\target\release\exactor-waf-guardian.exe") {
+    $ReleaseExe = "$ProjectRoot\target\release\exactor-waf-guardian.exe"
+} elseif (Test-Path "$ProjectRoot\..\target\release\exactor-waf-guardian.exe") {
+    $ReleaseExe = "$ProjectRoot\..\target\release\exactor-waf-guardian.exe"
+}
+
+if ((-not $ReleaseExe) -or (-not $NoRebuild)) {
+    Write-Host "Building optimized release binary..." -ForegroundColor Yellow
+    Push-Location $ProjectRoot
+    try {
+        cargo build --release -p exactor-waf-guardian -j 1
+    } finally {
+        Pop-Location
+    }
+    if (Test-Path "$ProjectRoot\target\release\exactor-waf-guardian.exe") {
+        $ReleaseExe = "$ProjectRoot\target\release\exactor-waf-guardian.exe"
+    } elseif (Test-Path "$ProjectRoot\..\target\release\exactor-waf-guardian.exe") {
+        $ReleaseExe = "$ProjectRoot\..\target\release\exactor-waf-guardian.exe"
+    }
+}
+
+if (-not $ReleaseExe -or (-not (Test-Path $ReleaseExe))) {
+    Write-Error "Release executable not found in $ProjectRoot\target\release or workspace target\release"
+    exit 1
+}
+
+# 2. Prepare Dist & Staging Directory
+if (Test-Path $StagingDir) {
+    Remove-Item -Recurse -Force $StagingDir
+}
+New-Item -ItemType Directory -Force -Path $StagingDir | Out-Null
+New-Item -ItemType Directory -Force -Path "$StagingDir\bin" | Out-Null
+
+# 3. Copy Assets
+Copy-Item -Path $ReleaseExe -Destination "$StagingDir\exactor-waf-guardian.exe" -Force
+Copy-Item -Path $ReleaseExe -Destination "$StagingDir\bin\exactor-waf-guardian.exe" -Force
+Copy-Item -Path "$ProjectRoot\waf_config.toml" -Destination "$StagingDir\waf_config.toml" -Force
+Copy-Item -Path "$ProjectRoot\install.ps1" -Destination "$StagingDir\install.ps1" -Force
+Copy-Item -Path "$ProjectRoot\uninstall.ps1" -Destination "$StagingDir\uninstall.ps1" -Force
+
+# 4. Generate README_INSTALL.txt for End Clients
+$ReadmeLines = @(
+    "================================================================================",
+    "  EXACTOR WAF GUARDIAN - ZERO-DEPENDENCY CLIENT INSTALLATION PACKAGE",
+    "  Deterministic SAT Cyber-Defense and Sub-millisecond Reverse Proxy",
+    "  Powered by EXACTOR Core and https://exactor.tech",
+    "================================================================================",
+    "",
+    "Este paquete es 100% autocontenido. El cliente NO necesita tener instalado Rust,",
+    "Cargo, Python, GCC, Visual Studio ni ninguna otra dependencia en su servidor.",
+    "",
+    "OPCION A: INSTALACION AUTOMATICA (RECOMENDADA)",
+    "--------------------------------------------------------------------------------",
+    "1. Abra PowerShell como Administrador.",
+    "2. Navegue a esta carpeta descomprimida:",
+    "     cd exactor-waf-guardian-$Version-windows-x86_64",
+    "3. Ejecute el instalador:",
+    "     powershell -ExecutionPolicy Bypass -File .\install.ps1",
+    "",
+    "   El instalador hara automaticamente:",
+    "   - Instalar el binario en C:\Program Files\Exactor\WAF",
+    "   - Crear la configuracion en C:\ProgramData\Exactor\WAF\waf_config.toml",
+    "   - Agregar el binario al System PATH",
+    "   - Registrar e iniciar el Servicio de Windows 'ExactorWAF' con arranque automatico.",
+    "",
+    "OPCION B: EJECUCION PORTABLE (SIN INSTALAR)",
+    "--------------------------------------------------------------------------------",
+    "Si solo desea probar el firewall sin instalar servicios de sistema:",
+    "1. Ejecute en CMD o PowerShell:",
+    "     .\exactor-waf-guardian.exe proxy --config .\waf_config.toml",
+    "2. Para probar una inspeccion de payload:",
+    "     .\exactor-waf-guardian.exe inspect --query `"id=1' OR 1=1--`"",
+    "",
+    "DESINSTALACION LIMPIA:",
+    "--------------------------------------------------------------------------------",
+    "Para desinstalar completamente el servicio y binarios:",
+    "   powershell -ExecutionPolicy Bypass -File .\uninstall.ps1",
+    "================================================================================"
+)
+$ReadmeClient = $ReadmeLines -join "`r`n"
+Set-Content -Path "$StagingDir\README_INSTALL.txt" -Value $ReadmeClient -Encoding utf8
+
+# 5. Compress into ZIP
+if (Test-Path $ZipFile) {
+    Remove-Item -Force $ZipFile
+}
+Write-Host "Compressing distribution zip..." -ForegroundColor Yellow
+Compress-Archive -Path "$StagingDir\*" -DestinationPath $ZipFile -Force
+
+# 6. Checksum & Summary
+$Hash = (Get-FileHash -Path $ZipFile -Algorithm SHA256).Hash
+$SizeMB = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
+
+Write-Host "`n============================================================" -ForegroundColor Green
+Write-Host "Client Distribution Package ready!" -ForegroundColor Green
+Write-Host "   Archive  : $ZipFile" -ForegroundColor Cyan
+Write-Host "   Size     : $SizeMB MB" -ForegroundColor Cyan
+Write-Host "   SHA256   : $Hash" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Green

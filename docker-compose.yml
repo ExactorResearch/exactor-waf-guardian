@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  exactor-waf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: exactor-waf-guardian:latest
+    container_name: exactor-waf-guardian
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - WAF_LISTEN_ADDR=0.0.0.0:8080
+      - WAF_UPSTREAM_URL=http://backend:3000
+      - WAF_MODE=block
+      - EXACTOR_API_URL=https://exactor.tech/api/simplify
+      - WAF_DATABASE_PATH=/etc/exactor/waf_ledger.db
+    volumes:
+      - ./waf_config.toml:/etc/exactor/waf_config.toml:ro
+      - waf_data:/etc/exactor
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  waf_data:
+    driver: local

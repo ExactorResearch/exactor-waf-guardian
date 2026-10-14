@@ -28,23 +28,70 @@ CONFIG_DIR="/etc/exactor"
 SERVICE_FILE="/etc/systemd/system/exactor-waf.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 1. Compile or Locate Binary
-echo -e "${YELLOW}[1/5] Preparing binary...${NC}"
+# 1. Locate Bundled Binary or Download Standalone Release
+echo -e "${YELLOW}[1/5] Preparing binary (Zero-Dependency Mode)...${NC}"
 BINARY_PATH=""
+RELEASE_TAG="v0.1.0"
+BUILD_SOURCE=false
 
-if [[ -f "${SCRIPT_DIR}/target/release/exactor-waf-guardian" ]]; then
+for arg in "$@"; do
+    if [[ "$arg" == "--source" ]] || [[ "$arg" == "--build-from-source" ]]; then
+        BUILD_SOURCE=true
+    fi
+done
+
+if [[ -f "${SCRIPT_DIR}/exactor-waf-guardian" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/exactor-waf-guardian"
+    echo -e "${GREEN}✓ Found bundled standalone binary in package.${NC}"
+elif [[ -f "${SCRIPT_DIR}/bin/exactor-waf-guardian" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/bin/exactor-waf-guardian"
+    echo -e "${GREEN}✓ Found bundled binary in bin/ directory.${NC}"
+elif [[ -f "${SCRIPT_DIR}/target/release/exactor-waf-guardian" ]]; then
     BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
-elif [[ -f "${SCRIPT_DIR}/../target/release/exactor-waf-guardian" ]]; then
-    BINARY_PATH="${SCRIPT_DIR}/../target/release/exactor-waf-guardian"
-else
-    echo -e "Compiling release binary using cargo..."
+    echo -e "${GREEN}✓ Found local release target binary.${NC}"
+elif [[ "$BUILD_SOURCE" == "true" ]]; then
+    echo -e "Compiling release binary from source using cargo..."
     if command -v cargo &> /dev/null; then
         (cd "${SCRIPT_DIR}" && cargo build --release)
         BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
     else
-        echo -e "${RED}Error: Cargo not found and no precompiled binary available.${NC}"
-        echo -e "Please install Rust (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh) or provide prebuilt binary."
+        echo -e "${RED}Error: Cargo not found for source build.${NC}"
         exit 1
+    fi
+else
+    # Zero-Install: Download pre-compiled standalone binary matching architecture
+    ARCH="$(uname -m)"
+    case "${ARCH}" in
+        x86_64|amd64) TARGET_ARCH="x86_64-unknown-linux-musl" ;;
+        aarch64|arm64) TARGET_ARCH="aarch64-unknown-linux-musl" ;;
+        *) echo -e "${RED}Unsupported CPU architecture: ${ARCH}${NC}"; exit 1 ;;
+    esac
+
+    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/releases/download/${RELEASE_TAG}/exactor-waf-guardian-${TARGET_ARCH}"
+    TEMP_BIN="/tmp/exactor-waf-guardian"
+    echo -e "Downloading pre-compiled standalone binary (${TARGET_ARCH})..."
+    
+    if command -v curl &> /dev/null; then
+        curl -sSL -f "${DOWNLOAD_URL}" -o "${TEMP_BIN}" || true
+    elif command -v wget &> /dev/null; then
+        wget -qO "${TEMP_BIN}" "${DOWNLOAD_URL}" || true
+    fi
+
+    if [[ -f "${TEMP_BIN}" ]] && [[ -s "${TEMP_BIN}" ]]; then
+        chmod +x "${TEMP_BIN}"
+        BINARY_PATH="${TEMP_BIN}"
+        echo -e "${GREEN}✓ Pre-compiled standalone binary downloaded successfully.${NC}"
+    else
+        # If offline or download fails, check if cargo is available as ultimate fallback
+        if command -v cargo &> /dev/null; then
+            echo -e "${YELLOW}Download unavailable. Building from source via cargo...${NC}"
+            (cd "${SCRIPT_DIR}" && cargo build --release)
+            BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
+        else
+            echo -e "${RED}Error: Could not retrieve precompiled binary and Cargo is not installed.${NC}"
+            echo -e "Provide the precompiled 'exactor-waf-guardian' binary in the installer folder."
+            exit 1
+        fi
     fi
 fi
 
@@ -80,7 +127,45 @@ fi
 # 4. Install Systemd Service
 echo -e "${YELLOW}[4/5] Installing systemd service...${NC}"
 if [[ -d "/etc/systemd/system" ]]; then
-    cp "${SCRIPT_DIR}/exactor-waf.service" "${SERVICE_FILE}"
+    if [[ -f "${SCRIPT_DIR}/exactor-waf.service" ]]; then
+        cp "${SCRIPT_DIR}/exactor-waf.service" "${SERVICE_FILE}"
+    else
+        cat << 'EOF' > "${SERVICE_FILE}"
+[Unit]
+Description=Exactor WAF Guardian - Deterministic SAT Cyber-Defense Proxy
+Documentation=https://github.com/ExactorResearch/exactor-waf-guardian
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/etc/exactor
+ExecStart=/usr/local/bin/exactor-waf-guardian proxy --config /etc/exactor/waf_config.toml
+Restart=always
+RestartSec=3s
+
+# Performance and File Descriptor Limits
+LimitNOFILE=1048576
+LimitNPROC=512000
+
+# Security Hardening
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=exactor-waf
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    fi
     chmod 644 "${SERVICE_FILE}"
     systemctl daemon-reload
     systemctl enable exactor-waf.service

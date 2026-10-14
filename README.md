@@ -137,36 +137,92 @@ Compares Accuracy, False Negatives, False Positives, Latency, and Cost across al
 
 ---
 
-## 🛠️ Production Server Installation
+## 🛠️ Zero-Dependency Installation (Instalación Sin Dependencias)
 
-### 1. Automated Installation on Linux (Ubuntu / Debian / RHEL / CentOS)
-Run the automated installer script with `sudo`:
+El cliente **NO necesita instalar nada** en su servidor (sin Rust, sin Cargo, sin Python, sin compiladores C/C++ ni dependencias externas). El binario es 100% autocontenido y de enlace estático.
+
+### Método 1: Instalación Rápida One-Liner (Recomendado para Producción)
+
+#### En Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
+Ejecute directamente en la terminal como root:
 ```bash
-cd exactor-waf-guardian
-sudo ./install.sh
+curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
 ```
-The installer:
-1. Compiles the optimized release binary (`cargo build --release`).
-2. Installs executable to `/usr/local/bin/exactor-waf-guardian`.
-3. Sets up configuration at `/etc/exactor/waf_config.toml`.
-4. Registers and starts the systemd service `/etc/systemd/system/exactor-waf.service`.
+> **¿Qué hace automáticamente?**
+> 1. Detecta la arquitectura (`x86_64` o `aarch64/ARM64`).
+> 2. Descarga e instala el binario estático en `/usr/local/bin/exactor-waf-guardian`.
+> 3. Despliega la configuración en `/etc/exactor/waf_config.toml`.
+> 4. Registra e inicia el demonio de sistema `systemd` (`exactor-waf.service`).
 
-### 2. Automated Installation on Windows Server
-Run in PowerShell as Administrator:
+#### En Windows Server
+Ejecute en PowerShell como Administrador:
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\install.ps1
+irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
 ```
-Installs the binary to `C:\Program Files\Exactor\WAF` and adds it to the System PATH.
+> **¿Qué hace automáticamente?**
+> 1. Despliega el ejecutable en `C:\Program Files\Exactor\WAF\exactor-waf-guardian.exe`.
+> 2. Despliega la configuración en `C:\ProgramData\Exactor\WAF\waf_config.toml`.
+> 3. Agrega la ruta al `System PATH` (accesible desde cualquier consola).
+> 4. Registra e inicia el Servicio de Windows `ExactorWAF` con arranque automático.
 
-### 3. Containerized Deployment (Docker & Kubernetes)
-```bash
-docker build -t exactor-waf-guardian:latest .
-docker run -d -p 8080:8080 \
-  -e WAF_UPSTREAM_URL="http://host.docker.internal:3000" \
-  -e EXACTOR_API_URL="https://exactor.tech/api/simplify" \
-  exactor-waf-guardian:latest
+---
+
+### Método 2: Paquetes Autónomos Offline (`dist/` ZIP / TAR.GZ)
+
+Para servidores con conectividad restringida o políticas empresariales que prohíben descargas por script:
+
+1. **Descargue el paquete precompilado:**
+   - **Windows:** `exactor-waf-guardian-v0.1.0-windows-x86_64.zip`
+   - **Linux:** `exactor-waf-guardian-v0.1.0-linux-x86_64.tar.gz`
+2. **Descomprima e instale en un clic:**
+   - En Windows:
+     ```powershell
+     powershell -ExecutionPolicy Bypass -File .\install.ps1
+     ```
+   - En Linux:
+     ```bash
+     sudo ./install.sh
+     ```
+3. **Ejecución Portable (Sin instalación):**
+   Si no desea tocar servicios de sistema, ejecute el binario directamente:
+   ```bash
+   # Windows
+   .\exactor-waf-guardian.exe proxy --config .\waf_config.toml
+
+   # Linux
+   ./exactor-waf-guardian proxy --config ./waf_config.toml
+   ```
+
+Para generar estos paquetes desde el repositorio:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package_dist.ps1 -NoRebuild
 ```
+o en Linux:
+```bash
+./scripts/package_dist.sh --no-rebuild
+```
+
+---
+
+### Método 3: Despliegue en Contenedor (Docker & Docker Compose)
+
+Para entornos basados en contenedores sin tocar el sistema operativo anfitrión:
+
+```bash
+# Iniciar inmediatamente con Docker Compose
+docker compose up -d
+
+# Ver logs de inspección en tiempo real
+docker compose logs -f exactor-waf
+```
+
+---
+
+### Desinstalación Limpia
+
+Para desinstalar completamente el servicio y binarios sin dejar rastros:
+- **En Windows:** `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1`
+- **En Linux:** `sudo ./uninstall.sh` (o `sudo ./uninstall.sh --purge` para eliminar también la base de datos de auditoría).
 
 ---
 
