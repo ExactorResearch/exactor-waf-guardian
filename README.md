@@ -21,9 +21,13 @@ It resolves the fundamental trilemma of modern application security: **combining
 ┌────────────────────────────────────────────────────────┐
 │            EXACTOR WAF GUARDIAN (Rust Server)          │
 │                                                        │
-│  1. Recursive AST Normalizer & Lexer                   │
+│  1. Recursive AST Normalizer & Grammar Lexer           │
 │     - Multi-pass URL decoding (%20, %2e%2e%2f)         │
 │     - SQL comment stripping (/**/ -> epsilon)          │
+│     - GraphQL AST parser (depth, batching, schema)     │
+│     - Strict JSON schema & Prototype Pollution checks  │
+│     - gRPC HTTP/2 framing & client trailer injection   │
+│     - JWT tamper detection (alg: none, missing sig)    │
 │     - Shannon entropy binarizer & AST token lattice     │
 │                                                        │
 │  2. In-Memory Fast-Path SAT Solver (< 0.02 ms)         │
@@ -33,6 +37,11 @@ It resolves the fundamental trilemma of modern application security: **combining
 │       • ISLAND-RCE  (Shell chains, Subshells, Sinks)   │
 │       • ISLAND-LFI  (Path traversal, Sensitive roots)  │
 │       • ISLAND-SSRF (Cloud metadata 169.254, RFC1918)  │
+│       • ISLAND-GRAPHQL (Introspection, Depth, Batching)│
+│       • ISLAND-JSON-PROTO (Proto pollution, BOMBs)     │
+│       • ISLAND-GRPC (Framing desync, Header injection) │
+│       • ISLAND-JWT (Alg: none, missing sig, KID traversal)
+│       • ISLAND-STATEFUL (Ring counter L7 DDoS & Brute) │
 │                                                        │
 │  3. Decision Perimeter:                                │
 │     ├─ [ VIOLATION DETECTED ]                          │

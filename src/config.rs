@@ -31,6 +31,29 @@ pub struct WafConfig {
     /// Enable automatic hot minimization sync with https://exactor.tech.
     #[serde(default = "default_auto_sync")]
     pub auto_sync_enabled: bool,
+
+    /// Enable stateful behavioral inspection (sliding windows).
+    #[serde(default = "default_stateful_enabled")]
+    pub stateful_enabled: bool,
+
+    /// Max requests allowed in sliding window per IP across all endpoints.
+    #[serde(default = "default_global_limit")]
+    pub stateful_global_limit: u32,
+
+    /// Max requests allowed in sliding window per IP on auth/login endpoints.
+    #[serde(default = "default_auth_limit")]
+    pub stateful_auth_limit: u32,
+
+    /// Sliding window duration in seconds.
+    #[serde(default = "default_window_secs")]
+    pub stateful_window_secs: u64,
+
+    /// Quarantine / ban duration in seconds for offenders.
+    #[serde(default = "default_ban_secs")]
+    pub stateful_ban_secs: u64,
+
+    /// Optional Redis connection URL (e.g. redis://127.0.0.1:6379).
+    pub redis_url: Option<String>,
 }
 
 fn default_mode() -> String {
@@ -53,6 +76,26 @@ fn default_auto_sync() -> bool {
     true
 }
 
+fn default_stateful_enabled() -> bool {
+    true
+}
+
+fn default_global_limit() -> u32 {
+    300
+}
+
+fn default_auth_limit() -> u32 {
+    20
+}
+
+fn default_window_secs() -> u64 {
+    60
+}
+
+fn default_ban_secs() -> u64 {
+    180
+}
+
 impl Default for WafConfig {
     fn default() -> Self {
         Self {
@@ -64,6 +107,12 @@ impl Default for WafConfig {
             database_path: default_database_path(),
             autonomous_sync_interval_secs: default_sync_interval(),
             auto_sync_enabled: default_auto_sync(),
+            stateful_enabled: default_stateful_enabled(),
+            stateful_global_limit: default_global_limit(),
+            stateful_auth_limit: default_auth_limit(),
+            stateful_window_secs: default_window_secs(),
+            stateful_ban_secs: default_ban_secs(),
+            redis_url: None,
         }
     }
 }
@@ -120,4 +169,18 @@ impl WafConfig {
 
         cfg
     }
+
+    /// Converts WafConfig parameters into a StatefulConfig for the sliding window engine.
+    pub fn to_stateful_config(&self) -> crate::stateful::StatefulConfig {
+        crate::stateful::StatefulConfig {
+            enabled: self.stateful_enabled,
+            window_secs: self.stateful_window_secs,
+            num_buckets: 12,
+            global_limit_per_window: self.stateful_global_limit,
+            auth_limit_per_window: self.stateful_auth_limit,
+            ban_duration_secs: self.stateful_ban_secs,
+            redis_url: self.redis_url.clone(),
+        }
+    }
 }
+

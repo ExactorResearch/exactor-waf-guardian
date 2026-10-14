@@ -27,6 +27,20 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v21_null_byte",
     "v22_cmd_binaries",
     "v23_suspicious_header",
+    // Enterprise & Banking Grammars
+    "v24_graphql_introspection",
+    "v25_graphql_deep_nesting",
+    "v26_graphql_batching",
+    "v27_proto_pollution",
+    "v28_json_deep_nesting",
+    "v29_grpc_smuggling",
+    "v30_grpc_status_injection",
+    "v31_jwt_alg_none",
+    "v32_jwt_missing_sig",
+    "v33_jwt_header_injection",
+    // Stateful Behavioral
+    "v34_stateful_rate_limit",
+    "v35_stateful_credential_stuffing",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -113,6 +127,22 @@ impl FeatureBinarizer {
         if req.full_inspectable_string().contains('\0') || req.full_inspectable_string().contains("%00") {
             fv.set(21);
         }
+
+        // Enterprise & Banking Grammars
+        if tokens.has_graphql_introspection { fv.set(24); }
+        if tokens.has_graphql_deep_nesting { fv.set(25); }
+        if tokens.has_graphql_batching { fv.set(26); }
+        if tokens.has_proto_pollution { fv.set(27); }
+        if tokens.has_json_deep_nesting { fv.set(28); }
+        if tokens.has_grpc_smuggling { fv.set(29); }
+        if tokens.has_grpc_status_injection { fv.set(30); }
+        if tokens.has_jwt_alg_none { fv.set(31); }
+        if tokens.has_jwt_missing_sig { fv.set(32); }
+        if tokens.has_jwt_header_injection { fv.set(33); }
+
+        // Stateful Behavioral
+        if tokens.has_stateful_rate_limit { fv.set(34); }
+        if tokens.has_stateful_credential_stuffing { fv.set(35); }
 
         fv
     }

@@ -30,3 +30,25 @@ autonomous_sync_interval_secs = 300
 
 # Enable automatic hot minimization sync with https://exactor.tech
 auto_sync_enabled = true
+
+# ==============================================================================
+# STATEFUL & BEHAVIORAL DEFENSE (Layer-7 DDoS, Brute Force & Credential Stuffing)
+# ==============================================================================
+# Enable temporal sliding window ring buffer analysis
+stateful_enabled = true
+
+# Max total requests permitted in sliding window per IP across all endpoints
+stateful_global_limit = 300
+
+# Max attempts permitted on sensitive authentication endpoints (/login, /auth, etc.)
+stateful_auth_limit = 20
+
+# Sliding temporal window duration in seconds (default: 60s ring buffer)
+stateful_window_secs = 60
+
+# Temporary isolation quarantine / jail duration in seconds for offenders (default: 180s)
+stateful_ban_secs = 180
+
+# Optional Redis connection URL for distributed cluster state synchronization (leave empty for built-in high-speed in-memory ring buffer)
+# redis_url = "redis://127.0.0.1:6379"
+

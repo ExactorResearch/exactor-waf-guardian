@@ -1,8 +1,10 @@
 use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;
+use crate::cloud::ExactorCloudClient;
 use crate::config::WafConfig;
 use crate::engine::ExactorSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
+use crate::stateful::StatefulRateLimiter;
 use crate::types::{AttackDecision, HttpRequestPayload, ProofChain};
 use axum::{
     body::Body,
@@ -17,7 +19,6 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use crate::cloud::ExactorCloudClient;
 use std::time::Instant;
 use tracing::{debug, error, warn};
 
@@ -25,6 +26,7 @@ pub struct ProxyState {
     pub config: WafConfig,
     pub engine: Arc<ExactorSatEngine>,
     pub ledger: SqliteLedger,
+    pub stateful_limiter: Arc<StatefulRateLimiter>,
     pub cloud_client: ExactorCloudClient,
     pub http_client: Client,
     pub start_time: Instant,
@@ -74,11 +76,20 @@ pub async fn proxy_handler(
         client_ip: Some(addr.ip().to_string()),
     };
 
-    // Sub-millisecond Fast-Path Evaluation (< 0.05 ms)
-    let proof: ProofChain = state.engine.evaluate_payload(&payload);
+    // 1. Stateful Behavioral & Sliding Window Rate Limiting
+    let stateful_verdict = state.stateful_limiter.check_and_update(&payload);
+
+    // 2. Sub-millisecond Fast-Path Evaluation (< 0.05 ms)
+    let proof: ProofChain = state.engine.evaluate_payload_with_verdict(&payload, Some(&stateful_verdict));
 
     // Compute minterm for anomaly / ledger tracking
-    let tokens = AstLexer::tokenize(&payload.full_inspectable_string());
+    let mut tokens = AstLexer::tokenize_request(&payload);
+    if stateful_verdict.is_rate_limit {
+        tokens.has_stateful_rate_limit = true;
+    }
+    if stateful_verdict.is_credential_stuffing {
+        tokens.has_stateful_credential_stuffing = true;
+    }
     let fv = FeatureBinarizer::binarize(&payload, &tokens);
     let minterm = fv.as_minterm();
 

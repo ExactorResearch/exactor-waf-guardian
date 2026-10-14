@@ -1,5 +1,6 @@
 use crate::ast::features::{FeatureBinarizer, FeatureVector};
 use crate::ast::lexer::{AstLexer, LexicalTokens};
+use crate::stateful::StatefulVerdict;
 use crate::types::{
     AttackCategory, AttackDecision, CertaintyIsland, DeductionRule, ExecutionPath,
     HttpRequestPayload, ProofChain,
@@ -86,6 +87,61 @@ impl ExactorSatEngine {
                 category: AttackCategory::Ssrf,
                 description: "Guaranteed invariant domain covering cloud metadata endpoints (169.254.169.254), loopback interfaces, and private protocols.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{SSRF}} \equiv \neg (Token(\text{PROXY\_URI}) \land (Token(\text{METADATA\_ENDPOINT}) \lor Token(\text{LOOPBACK\_TARGET})))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-GRAPHQL".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-GRAPHQL".to_string(),
+                name: "GraphQL Grammar & AST Invariant Island".to_string(),
+                category: AttackCategory::GraphqlAbuse,
+                description: "Guaranteed invariant domain protecting GraphQL services against introspection probes, cyclic recursive nesting exhaustion, and alias multiplexing.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{GraphQL}} \equiv \neg (Token(\text{INTROSPECTION}) \lor Token(\text{DEEP\_NESTING}) \lor Token(\text{BATCHING}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-JSON-PROTO".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-JSON-PROTO".to_string(),
+                name: "Strict JSON Schema & Prototype Sandbox Island".to_string(),
+                category: AttackCategory::PrototypePollution,
+                description: "Guaranteed invariant domain preventing JavaScript prototype tampering, object property pollution, and recursive JSON parsing bombs.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Proto}} \equiv \neg (Token(\text{PROTO\_POLLUTION}) \lor Token(\text{SCHEMA\_EXHAUSTION}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-GRPC".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-GRPC".to_string(),
+                name: "gRPC & Protobuf Wire Protocol Framing Island".to_string(),
+                category: AttackCategory::GrpcSmuggling,
+                description: "Guaranteed invariant domain validating HTTP/2 gRPC 5-byte framing, preventing client status trailer injection and protocol smuggling.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{gRPC}} \equiv \neg (Token(\text{STATUS\_INJECTION}) \lor Token(\text{FRAME\_DESYNC}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-JWT".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-JWT".to_string(),
+                name: "Cryptographic Identity & JWT Integrity Island".to_string(),
+                category: AttackCategory::JwtTampering,
+                description: "Guaranteed invariant domain enforcing cryptographically signed tokens, preventing alg: none confusion, missing signatures, and header parameter injections.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{JWT}} \equiv \neg (Token(\text{ALG\_NONE}) \lor Token(\text{MISSING\_SIGNATURE}) \lor Token(\text{HEADER\_INJECTION}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-STATEFUL".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-STATEFUL".to_string(),
+                name: "Temporal Sliding Window & Behavioral Dynamics Island".to_string(),
+                category: AttackCategory::RateLimitDdos,
+                description: "Guaranteed invariant domain monitoring temporal event frequencies across sliding atomic ring counters to block L7 bursts, distributed brute-force, and credential stuffing.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Stateful}} \equiv \neg (Token(\text{RATE\_LIMIT\_BURST}) \lor Token(\text{CREDENTIAL\_STUFFING}))".to_string(),
                 confidence: 1.0,
             },
         );
@@ -257,6 +313,148 @@ impl ExactorSatEngine {
             },
         );
 
+        // GraphQL Rules
+        rules.insert(
+            "SAT-GQL-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GQL-01".to_string(),
+                island_id: "ISLAND-GRAPHQL".to_string(),
+                category: AttackCategory::GraphqlAbuse,
+                name: "GraphQL Schema Introspection Probe".to_string(),
+                description: "Detects schema dumping or reconnaissance via __schema, __type, or __directive introspection in production.".to_string(),
+                invariant_formula: r"Token(\text{GRAPHQL\_INTROSPECTION\_PROBE})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-GQL-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GQL-02".to_string(),
+                island_id: "ISLAND-GRAPHQL".to_string(),
+                category: AttackCategory::GraphqlAbuse,
+                name: "GraphQL Cyclic AST Deep Nesting DoS".to_string(),
+                description: "Detects cyclic recursion or recursive field nesting exceeding safe AST depth limits (> 6 levels).".to_string(),
+                invariant_formula: r"Expression(\text{AST\_Depth} > 6) \implies \text{VIOLATION}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-GQL-03".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GQL-03".to_string(),
+                island_id: "ISLAND-GRAPHQL".to_string(),
+                category: AttackCategory::GraphqlAbuse,
+                name: "GraphQL Batch / Alias Multiplication Amplification".to_string(),
+                description: "Detects batch query overloading via JSON arrays or multiple alias definitions designed to evade rate limits.".to_string(),
+                invariant_formula: r"Token(\text{GRAPHQL\_BATCH\_ARRAY} \lor \text{ALIAS\_AMPLIFICATION})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // JSON & Prototype Rules
+        rules.insert(
+            "SAT-JSON-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-JSON-01".to_string(),
+                island_id: "ISLAND-JSON-PROTO".to_string(),
+                category: AttackCategory::PrototypePollution,
+                name: "Object Prototype Property Pollution Invariant".to_string(),
+                description: "Detects malicious property injection into JavaScript object prototypes (__proto__, constructor.prototype).".to_string(),
+                invariant_formula: r"Token(\text{__proto__} \lor \text{constructor.prototype} \lor \text{__defineGetter__})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-JSON-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-JSON-02".to_string(),
+                island_id: "ISLAND-JSON-PROTO".to_string(),
+                category: AttackCategory::PrototypePollution,
+                name: "JSON Recursive Nesting Schema Exhaustion".to_string(),
+                description: "Detects recursive JSON schema nesting depth exceeding parser memory boundaries (> 20 levels).".to_string(),
+                invariant_formula: r"Expression(\text{JSON\_Depth} > 20) \implies \text{VIOLATION}".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // gRPC Rules
+        rules.insert(
+            "SAT-GRPC-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GRPC-01".to_string(),
+                island_id: "ISLAND-GRPC".to_string(),
+                category: AttackCategory::GrpcSmuggling,
+                name: "Client-Injected gRPC Status Trailer Smuggling".to_string(),
+                description: "Detects unauthorized client injection of grpc-status or grpc-message in request headers to forge upstream authorization responses.".to_string(),
+                invariant_formula: r"Token(\text{CLIENT\_GRPC\_STATUS\_HEADER})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-GRPC-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GRPC-02".to_string(),
+                island_id: "ISLAND-GRPC".to_string(),
+                category: AttackCategory::GrpcSmuggling,
+                name: "gRPC Wire Protocol Framing Anomaly".to_string(),
+                description: "Detects invalid compression flags, truncated frame headers, or stream length desynchronization in gRPC messages.".to_string(),
+                invariant_formula: r"Token(\text{GRPC\_FRAMING\_DESYNC})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // JWT Rules
+        rules.insert(
+            "SAT-JWT-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-JWT-01".to_string(),
+                island_id: "ISLAND-JWT".to_string(),
+                category: AttackCategory::JwtTampering,
+                name: "JWT Algorithm Confusion & Unsigned Token Invariant".to_string(),
+                description: "Detects tokens with alg: none or tokens missing the cryptographic signature component entirely.".to_string(),
+                invariant_formula: r"Token(\text{JWT\_ALG\_NONE} \lor \text{JWT\_MISSING\_SIG})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-JWT-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-JWT-02".to_string(),
+                island_id: "ISLAND-JWT".to_string(),
+                category: AttackCategory::JwtTampering,
+                name: "JWT Header Parameter Injection (JKU/JWK/KID Spoofing)".to_string(),
+                description: "Detects attacker-controlled public keys in jwk/jku or directory traversal/SQLi in kid parameter.".to_string(),
+                invariant_formula: r"Token(\text{JWT\_INJECTED\_JWK} \lor \text{KID\_TRAVERSAL} \lor \text{JKU\_SSRF})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // Stateful Behavioral Rules
+        rules.insert(
+            "SAT-STATE-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-STATE-01".to_string(),
+                island_id: "ISLAND-STATEFUL".to_string(),
+                category: AttackCategory::RateLimitDdos,
+                name: "Layer-7 Request Rate Limit Exceeded (DDoS Ring Counter)".to_string(),
+                description: "Detects volumetric Layer-7 request bursts exceeding temporal sliding window invariant on atomic ring counter.".to_string(),
+                invariant_formula: r"Expression(\text{SlidingWindowCount} > \text{GlobalThreshold})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-STATE-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-STATE-02".to_string(),
+                island_id: "ISLAND-STATEFUL".to_string(),
+                category: AttackCategory::CredentialStuffing,
+                name: "Distributed Credential Stuffing & Auth Flooding Invariant".to_string(),
+                description: "Detects brute force or distributed credential stuffing attempts targeting sensitive authentication endpoints.".to_string(),
+                invariant_formula: r"Expression(\text{AuthWindowCount} > \text{AuthThreshold})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
         // Pre-warm AST regex singletons so first evaluation is instant
         let _ = AstLexer::tokenize("");
 
@@ -288,10 +486,30 @@ impl ExactorSatEngine {
     /// Evaluates an HTTP request payload against all Certainty Islands and dynamic rules.
     /// Operates in sub-millisecond execution time (< 0.05 ms / 50 µs).
     pub fn evaluate_payload(&self, req: &HttpRequestPayload) -> ProofChain {
+        self.evaluate_payload_with_verdict(req, None)
+    }
+
+    /// Evaluates an HTTP request payload against all Certainty Islands, dynamic rules, and stateful verdicts.
+    /// Operates in sub-millisecond execution time (< 0.05 ms / 50 µs).
+    pub fn evaluate_payload_with_verdict(
+        &self,
+        req: &HttpRequestPayload,
+        stateful: Option<&StatefulVerdict>,
+    ) -> ProofChain {
         let t_start = Instant::now();
 
-        let inspectable = req.full_inspectable_string();
-        let tokens: LexicalTokens = AstLexer::tokenize(&inspectable);
+        let mut tokens: LexicalTokens = AstLexer::tokenize_request(req);
+        if let Some(sv) = stateful {
+            if sv.is_rate_limit {
+                tokens.has_stateful_rate_limit = true;
+                tokens.active_token_names.push("STATEFUL_BURST_RATE_LIMIT_EXCEEDED".to_string());
+            }
+            if sv.is_credential_stuffing {
+                tokens.has_stateful_credential_stuffing = true;
+                tokens.active_token_names.push("STATEFUL_CREDENTIAL_STUFFING_BURST".to_string());
+            }
+        }
+
         let fv: FeatureVector = FeatureBinarizer::binarize(req, &tokens);
 
         let mut matched_rules: Vec<DeductionRule> = Vec::with_capacity(4);
@@ -400,7 +618,94 @@ impl ExactorSatEngine {
             }
         }
 
-        // 6. Dynamic hot-compiled rules evaluation
+        // 6. ISLAND-GRAPHQL evaluation
+        if tokens.has_graphql_introspection {
+            if let Some(r) = self.rules.get("SAT-GQL-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRAPHQL".to_string());
+                deduction_steps.push("[ISLAND-GRAPHQL] GraphQL schema introspection query probe (__schema/__type) rejected by AST policy.".to_string());
+            }
+        }
+        if tokens.has_graphql_deep_nesting {
+            if let Some(r) = self.rules.get("SAT-GQL-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRAPHQL".to_string());
+                deduction_steps.push("[ISLAND-GRAPHQL] Deep cyclic AST recursion exceeds safe schema depth boundary (> 6 levels).".to_string());
+            }
+        }
+        if tokens.has_graphql_batching {
+            if let Some(r) = self.rules.get("SAT-GQL-03") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRAPHQL".to_string());
+                deduction_steps.push("[ISLAND-GRAPHQL] GraphQL batch array or alias multiplexing amplification detected.".to_string());
+            }
+        }
+
+        // 7. ISLAND-JSON-PROTO evaluation
+        if tokens.has_proto_pollution {
+            if let Some(r) = self.rules.get("SAT-JSON-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-JSON-PROTO".to_string());
+                deduction_steps.push("[ISLAND-JSON-PROTO] Malicious prototype pollution property assignment (__proto__ / constructor.prototype).".to_string());
+            }
+        }
+        if tokens.has_json_deep_nesting {
+            if let Some(r) = self.rules.get("SAT-JSON-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-JSON-PROTO".to_string());
+                deduction_steps.push("[ISLAND-JSON-PROTO] Recursive JSON schema nesting bomb exceeds parser stack bounds (> 20 levels).".to_string());
+            }
+        }
+
+        // 8. ISLAND-GRPC evaluation
+        if tokens.has_grpc_status_injection {
+            if let Some(r) = self.rules.get("SAT-GRPC-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRPC".to_string());
+                deduction_steps.push("[ISLAND-GRPC] Client request header contains server trailer injection (grpc-status / grpc-message).".to_string());
+            }
+        }
+        if tokens.has_grpc_smuggling {
+            if let Some(r) = self.rules.get("SAT-GRPC-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRPC".to_string());
+                deduction_steps.push("[ISLAND-GRPC] gRPC framing protocol violation or wire stream length desynchronization.".to_string());
+            }
+        }
+
+        // 9. ISLAND-JWT evaluation
+        if tokens.has_jwt_alg_none || tokens.has_jwt_missing_sig {
+            if let Some(r) = self.rules.get("SAT-JWT-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-JWT".to_string());
+                deduction_steps.push("[ISLAND-JWT] Insecure JWT with alg: 'none' or missing cryptographic signature.".to_string());
+            }
+        }
+        if tokens.has_jwt_header_injection {
+            if let Some(r) = self.rules.get("SAT-JWT-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-JWT".to_string());
+                deduction_steps.push("[ISLAND-JWT] Malicious JWT header parameter injection (untrusted JKU/JWK or directory traversal/SQLi in kid).".to_string());
+            }
+        }
+
+        // 10. ISLAND-STATEFUL evaluation
+        if tokens.has_stateful_rate_limit {
+            if let Some(r) = self.rules.get("SAT-STATE-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-STATEFUL".to_string());
+                deduction_steps.push("[ISLAND-STATEFUL] Atomic ring counter temporal sliding window exceeded Layer-7 burst limit.".to_string());
+            }
+        }
+        if tokens.has_stateful_credential_stuffing {
+            if let Some(r) = self.rules.get("SAT-STATE-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-STATEFUL".to_string());
+                deduction_steps.push("[ISLAND-STATEFUL] High-frequency authentication attempt burst on sensitive endpoint (Credential Stuffing).".to_string());
+            }
+        }
+
+        // 11. Dynamic hot-compiled rules evaluation
         let mut dynamic_matched = false;
         {
             let dyn_rules = self.dynamic_clauses.read().unwrap();

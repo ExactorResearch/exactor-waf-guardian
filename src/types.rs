@@ -11,6 +11,12 @@ pub enum AttackCategory {
     CommandInjection,
     PathTraversal,
     Ssrf,
+    GraphqlAbuse,
+    PrototypePollution,
+    GrpcSmuggling,
+    JwtTampering,
+    CredentialStuffing,
+    RateLimitDdos,
     Unknown,
 }
 
@@ -23,6 +29,12 @@ impl AttackCategory {
             AttackCategory::CommandInjection => "command_injection",
             AttackCategory::PathTraversal => "path_traversal",
             AttackCategory::Ssrf => "ssrf",
+            AttackCategory::GraphqlAbuse => "graphql_abuse",
+            AttackCategory::PrototypePollution => "prototype_pollution",
+            AttackCategory::GrpcSmuggling => "grpc_smuggling",
+            AttackCategory::JwtTampering => "jwt_tampering",
+            AttackCategory::CredentialStuffing => "credential_stuffing",
+            AttackCategory::RateLimitDdos => "rate_limit_ddos",
             AttackCategory::Unknown => "unknown",
         }
     }
@@ -35,6 +47,12 @@ impl AttackCategory {
             AttackCategory::CommandInjection => "COMMAND INJECTION / RCE",
             AttackCategory::PathTraversal => "PATH TRAVERSAL / LFI",
             AttackCategory::Ssrf => "SERVER-SIDE REQUEST FORGERY (SSRF)",
+            AttackCategory::GraphqlAbuse => "GRAPHQL AST INJECTION / ABUSE",
+            AttackCategory::PrototypePollution => "PROTOTYPE POLLUTION / JSON SMUGGLING",
+            AttackCategory::GrpcSmuggling => "GRPC / PROTOBUF PROTOCOL ANOMALY",
+            AttackCategory::JwtTampering => "JWT TAMPERING / ALGORITHM CONFUSION",
+            AttackCategory::CredentialStuffing => "CREDENTIAL STUFFING / BRUTE FORCE",
+            AttackCategory::RateLimitDdos => "LAYER-7 RATE LIMIT EXCEEDED / DDOS",
             AttackCategory::Unknown => "UNKNOWN ANOMALY",
         }
     }

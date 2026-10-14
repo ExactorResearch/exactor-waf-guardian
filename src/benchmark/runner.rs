@@ -99,6 +99,33 @@ impl BenchmarkSuite {
                 "url=http://127.0.0.1:8080/admin",
                 "",
             ),
+            // GraphQL Abuse
+            HttpRequestPayload::new(
+                "POST",
+                "/graphql",
+                "",
+                r#"{"query": "{ __schema { types { name } } }"}"#,
+            ),
+            // Prototype Pollution
+            HttpRequestPayload::new(
+                "POST",
+                "/api/v1/profile",
+                "",
+                r#"{"__proto__": {"isAdmin": true}}"#,
+            ),
+            // gRPC Status Injection
+            {
+                let mut p = HttpRequestPayload::new("POST", "/grpc.Bank/Transfer", "", "");
+                p.headers.insert("content-type".to_string(), "application/grpc".to_string());
+                p.headers.insert("grpc-status".to_string(), "0".to_string());
+                p
+            },
+            // JWT Tampering
+            {
+                let mut p = HttpRequestPayload::new("GET", "/api/v1/user", "", "");
+                p.headers.insert("authorization".to_string(), "Bearer eyJhbGciOiAibm9uZSIgfQ.eyJ1c2VyIjogImFkbWluIn0.".to_string());
+                p
+            },
             // Benign 1
             HttpRequestPayload::new(
                 "GET",

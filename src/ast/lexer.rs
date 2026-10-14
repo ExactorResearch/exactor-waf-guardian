@@ -1,5 +1,11 @@
+use crate::ast::graphql::GraphqlAstAnalyzer;
+use crate::ast::grpc::GrpcProtobufAnalyzer;
+use crate::ast::json_rules::JsonStrictAnalyzer;
+use crate::ast::jwt::JwtTamperingAnalyzer;
+use crate::types::HttpRequestPayload;
 use percent_encoding::percent_decode_str;
 use regex::Regex;
+use std::collections::HashMap;
 use std::sync::OnceLock;
 
 /// Multi-pass recursive normalization and AST token extraction.
@@ -27,6 +33,20 @@ pub struct LexicalTokens {
     pub has_ssrf_private_ip: bool,
     pub has_high_entropy: bool,
     pub is_obfuscated: bool,
+    // Banking & Enterprise Grammar tokens
+    pub has_graphql_introspection: bool,
+    pub has_graphql_deep_nesting: bool,
+    pub has_graphql_batching: bool,
+    pub has_proto_pollution: bool,
+    pub has_json_deep_nesting: bool,
+    pub has_grpc_smuggling: bool,
+    pub has_grpc_status_injection: bool,
+    pub has_jwt_alg_none: bool,
+    pub has_jwt_missing_sig: bool,
+    pub has_jwt_header_injection: bool,
+    // Stateful Behavioral tokens
+    pub has_stateful_rate_limit: bool,
+    pub has_stateful_credential_stuffing: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -266,6 +286,104 @@ impl AstLexer {
             tokens.has_ssrf_metadata = true;
             tokens.active_token_names.push("CLOUD_METADATA_ENDPOINT".to_string());
         }
+
+        // 6. GraphQL Tokens (raw text / fallback inspection)
+        let gql = GraphqlAstAnalyzer::analyze("", raw_text, "");
+        if gql.has_introspection {
+            tokens.has_graphql_introspection = true;
+            tokens.active_token_names.extend(gql.active_tokens.clone());
+        }
+        if gql.has_deep_nesting {
+            tokens.has_graphql_deep_nesting = true;
+            tokens.active_token_names.extend(gql.active_tokens.clone());
+        }
+        if gql.has_batching {
+            tokens.has_graphql_batching = true;
+            tokens.active_token_names.extend(gql.active_tokens.clone());
+        }
+
+        // 7. JSON Strict & Prototype Pollution
+        let js = JsonStrictAnalyzer::analyze(raw_text);
+        if js.has_proto_pollution {
+            tokens.has_proto_pollution = true;
+            tokens.active_token_names.extend(js.active_tokens.clone());
+        }
+        if js.has_deep_nesting {
+            tokens.has_json_deep_nesting = true;
+            tokens.active_token_names.extend(js.active_tokens.clone());
+        }
+
+        // 8. JWT Tampering & Algorithm Confusion
+        let empty_headers = HashMap::new();
+        let jwt = JwtTamperingAnalyzer::analyze(&empty_headers, raw_text);
+        if jwt.has_alg_none {
+            tokens.has_jwt_alg_none = true;
+            tokens.active_token_names.extend(jwt.active_tokens.clone());
+        }
+        if jwt.has_missing_signature {
+            tokens.has_jwt_missing_sig = true;
+            tokens.active_token_names.extend(jwt.active_tokens.clone());
+        }
+        if jwt.has_header_injection {
+            tokens.has_jwt_header_injection = true;
+            tokens.active_token_names.extend(jwt.active_tokens.clone());
+        }
+
+        tokens.active_token_names.sort();
+        tokens.active_token_names.dedup();
+        tokens
+    }
+
+    /// Full-fidelity HTTP request tokenizer combining headers, body, framing, and AST grammars.
+    pub fn tokenize_request(req: &HttpRequestPayload) -> LexicalTokens {
+        let inspectable = req.full_inspectable_string();
+        let mut tokens = Self::tokenize(&inspectable);
+
+        // A. GraphQL AST Grammar Analyzer
+        let gql = GraphqlAstAnalyzer::analyze(&req.path, &req.body, &req.query_string);
+        if gql.has_introspection {
+            tokens.has_graphql_introspection = true;
+        }
+        if gql.has_deep_nesting {
+            tokens.has_graphql_deep_nesting = true;
+        }
+        if gql.has_batching {
+            tokens.has_graphql_batching = true;
+        }
+        tokens.active_token_names.extend(gql.active_tokens);
+
+        // B. Strict JSON Schema & Prototype Pollution
+        let js = JsonStrictAnalyzer::analyze(&req.body);
+        if js.has_proto_pollution {
+            tokens.has_proto_pollution = true;
+        }
+        if js.has_deep_nesting {
+            tokens.has_json_deep_nesting = true;
+        }
+        tokens.active_token_names.extend(js.active_tokens);
+
+        // C. gRPC / Protobuf Smuggling & Trailer Injection
+        let grpc = GrpcProtobufAnalyzer::analyze(&req.headers, req.body.as_bytes());
+        if grpc.has_grpc_smuggling {
+            tokens.has_grpc_smuggling = true;
+        }
+        if grpc.has_grpc_status_injection {
+            tokens.has_grpc_status_injection = true;
+        }
+        tokens.active_token_names.extend(grpc.active_tokens);
+
+        // D. JWT Tampering & Algorithm Confusion
+        let jwt = JwtTamperingAnalyzer::analyze(&req.headers, &inspectable);
+        if jwt.has_alg_none {
+            tokens.has_jwt_alg_none = true;
+        }
+        if jwt.has_missing_signature {
+            tokens.has_jwt_missing_sig = true;
+        }
+        if jwt.has_header_injection {
+            tokens.has_jwt_header_injection = true;
+        }
+        tokens.active_token_names.extend(jwt.active_tokens);
 
         tokens.active_token_names.sort();
         tokens.active_token_names.dedup();

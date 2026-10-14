@@ -7,6 +7,7 @@ use exactor_waf_guardian::config::WafConfig;
 use exactor_waf_guardian::engine::ExactorSatEngine;
 use exactor_waf_guardian::ledger::SqliteLedger;
 use exactor_waf_guardian::proxy::{proxy_handler, ProxyState};
+use exactor_waf_guardian::stateful::StatefulRateLimiter;
 use exactor_waf_guardian::types::HttpRequestPayload;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -164,10 +165,13 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         config.exactor_api_token.clone(),
     );
 
+    let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
+
     let proxy_state = Arc::new(ProxyState {
         config: config.clone(),
         engine: engine.clone(),
         ledger: ledger.clone(),
+        stateful_limiter: stateful_limiter.clone(),
         cloud_client: cloud_client.clone(),
         http_client: reqwest::Client::builder()
             .timeout(Duration::from_secs(60))
