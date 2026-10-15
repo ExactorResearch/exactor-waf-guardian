@@ -108,6 +108,98 @@ El servidor incluye endpoints de observabilidad de alta frecuencia sin dependenc
 
 ---
 
+## 🧠 ¿Por qué se debe Entrenar, Cómo Funciona y Cómo Descargar tu Licencia?
+
+### 1. ¿Por qué se debe entrenar el WAF?
+El WAF viene de fábrica con **10 Islas de Certeza pre-configuradas** que bloquean instantáneamente los ataques conocidos en menos de $0.02\text{ ms}$.
+
+Sin embargo, en el mundo real, los atacantes **mutan y camuflan continuamente sus ataques**:
+- Inyectan SQLi usando comentarios `/*...*/`, espacios hexadecimales, JSON anidados o cabeceras falsas.
+- Cada variación genera un **mintérmino nuevo** en el hipercubo booleano $\{0, 1\}^{128}$ que el WAF bloquea y registra en su base de datos local SQLite (`waf_ledger.db`).
+- **Si no se entrenara:** El WAF tendría que almacenar miles de casos específicos sueltos en memoria RAM, saturando la caché del procesador y volviéndose lento.
+- **Al entrenar en EXACTOR CORE:** El algoritmo en la nube ejecuta una **Síntesis Inductiva Exacta**:
+  1. Descarta todas las variables de camuflaje (*Don't Cares*).
+  2. Extrae el **Implicante Primo Mínimo** (la fórmula raíz irreductible).
+  3. **Generaliza la protección al 100%:** Inmuniza al servidor no solo contra los ataques ya vistos, sino contra **trillones de mutaciones futuras** con ese mismo núcleo, reduciendo miles de reglas a una sola instrucción de microprocesador (`AND & CMP`).
+
+---
+
+### 2. ¿Cómo se entrena?
+El WAF ofrece dos modos de entrenamiento:
+1. **Automático en Segundo Plano (Recomendado):**  
+   El demonio revisa periódicamente los casos anómalos acumulados en `waf_ledger.db`, los empaqueta y los envía a la nube cada 5 minutos (`autonomous_sync_interval_secs = 300`). La nueva regla sintetizada se **hot-compila en memoria RAM en 1 microsegundo**, sin reiniciar el servidor ni interrumpir conexiones.
+2. **Manual por CLI:**  
+   Puedes forzar la sincronización y aprendizaje inmediato en cualquier momento:
+   ```bash
+   exactor-waf-guardian sync-simplify --config /etc/exactor/waf_config.toml
+   ```
+
+---
+
+### 3. ¿Cómo obtener una Licencia de EXACTOR CORE?
+Para conectar tu WAF con el motor de síntesis matemática en la nube y habilitar el aprendizaje continuo, necesitas un **Token de Licencia**:
+
+1. **Crea tu cuenta en EXACTOR:**  
+   Regístrate en [https://exactor.tech/register.html](https://exactor.tech/register.html).
+2. **Elige tu Plan de Silicon Units (SU):**  
+   - **Plan Gratuito:** Incluye **100 SU / mes** para pruebas y laboratorios.
+   - **Plan Scout ($20 USD/mes):** 1,000 SU / mes (hasta 20 variables / 2.5K mintérminos).
+   - **Plan Pro / Dev ($49 USD/mes):** 5,000 SU / mes (hasta 64 variables / 10K mintérminos).
+   - **Plan Startup ($499 USD/mes):** 50,000 SU / mes (hasta 128 variables / 100K mintérminos).
+3. **Obtén tu API Token:**  
+   En tu panel de control de EXACTOR ([https://exactor.tech/token-manager.html](https://exactor.tech/token-manager.html)), copia tu **API Token** (`ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+
+---
+
+### 4. ¿Cómo se Configura la Licencia en el WAF?
+
+#### Opción A: En el archivo `waf_config.toml` (Recomendado)
+Edita `/etc/exactor/waf_config.toml` (Linux) o `C:\ProgramData\Exactor\WAF\waf_config.toml` (Windows):
+
+```toml
+# URL oficial de la API de síntesis booleana EXACTOR CORE
+exactor_api_url = "https://exactor.tech/api/simplify"
+
+# Tu Licencia / API Token de EXACTOR CORE
+exactor_api_token = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Habilitar el aprendizaje y síntesis autónoma continua
+auto_sync_enabled = true
+
+# Intervalo de entrenamiento en segundos (por defecto: 300s = 5 minutos)
+autonomous_sync_interval_secs = 300
+```
+
+#### Opción B: Mediante Variable de Entorno (Docker / Kubernetes)
+```bash
+export EXACTOR_API_TOKEN="ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export EXACTOR_API_URL="https://exactor.tech/api/simplify"
+```
+En `docker-compose.yml`:
+```yaml
+environment:
+  - EXACTOR_API_URL=https://exactor.tech/api/simplify
+  - EXACTOR_API_TOKEN=ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+#### Opción C: Verificar la Conexión de tu Licencia
+Para confirmar que tu licencia es válida y probar la comunicación con el motor de síntesis:
+```bash
+exactor-waf-guardian sync-simplify --config waf_config.toml
+```
+Salida esperada en consola:
+```text
+⚡ Exactor WAF: Initiating Exact Boolean Simplification
+   Target: https://exactor.tech/api/simplify
+📥 Found 15 pending anomaly minterms to simplify.
+✅ Cloud Simplification Succeeded!
+   Reduction Percentage : 93.33%
+   Original Gates       : 45
+   New Gates            : 3
+```
+
+---
+
 ## 🏛️ System Architecture
 
 ```text
