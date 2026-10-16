@@ -5,7 +5,7 @@
 # ==============================================================================
 
 # Network listener for inbound HTTP traffic to be protected
-listen_addr = "0.0.0.0:8080"
+listen_addr = "0.0.0.0:10000"
 
 # Target upstream backend application (Nginx, Node, Python, Go, Java, PHP, etc.)
 upstream_url = "http://127.0.0.1:3000"
@@ -57,5 +57,5 @@ stateful_ban_secs = 180
 # ==============================================================================
 # Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter
 # When enabled, Envoy offloads SAT security checks to Exactor at sub-millisecond speeds.
-# envoy_ext_authz_addr = "0.0.0.0:9002"
+envoy_ext_authz_addr = "0.0.0.0:9002"
 
