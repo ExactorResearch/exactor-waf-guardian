@@ -12,23 +12,23 @@
 
 It implements deterministic Neuro-Symbolic SAT verification and formal **Certainty Islands (Islas de Certeza)** for real-time edge cybersecurity, resolving the fundamental trilemma of modern application security: **combining deep cognitive reasoning with sub-millisecond network SLAs (< 0.05 ms), 100% mathematically verifiable causal proofs, zero marginal inference cost, and autonomous Boolean logic minimization via [https://exactor.tech](https://exactor.tech).**
 
-> 📘 **Documentación Teórica Fundamental:**  
-> Para comprender cómo clasifica el WAF sin etiquetado humano manual y cómo se sintetizan y generalizan las reglas consumiendo Silicon Units (SU), consulta [Supervisión Axiomática y Síntesis Inductiva en EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
+> 📘 **Foundational Theoretical Documentation:**  
+> To understand how the WAF classifies without manual human labeling, and how rules are synthesized and generalized by consuming Silicon Units (SU), see [Axiomatic Supervision and Inductive Synthesis in EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
 
 ---
 
-## 🚀 Get Started (Inicio Rápido en 60 Segundos)
+## 🚀 Get Started (60-Second Quickstart)
 
-Protege cualquier aplicación web, microservicio o API en menos de un minuto sin instalar compiladores ni dependencias externas.
+Protect any web application, microservice, or API in under a minute without installing compilers or external runtime dependencies.
 
-### 1. Elige tu método de despliegue preferido
+### 1. Choose Your Preferred Deployment Method
 
 #### A. Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
 ```bash
 curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
 ```
 
-#### B. Windows Server (PowerShell como Administrador)
+#### B. Windows Server (PowerShell as Administrator)
 ```powershell
 irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
 ```
@@ -38,8 +38,8 @@ irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/maste
 docker compose up -d
 ```
 
-#### D. Modo Portable / Binario Autónomo (Sin tocar servicios de sistema)
-Descarga el paquete precompilado desde [`dist/`](dist/) o Releases y ejecuta directamente:
+#### D. Portable Mode / Standalone Binary (Zero System Service Changes)
+Download the precompiled bundle from [`dist/`](dist/) or GitHub Releases and run directly:
 ```bash
 # Windows
 .\exactor-waf-guardian.exe proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000
@@ -50,40 +50,40 @@ Descarga el paquete precompilado desde [`dist/`](dist/) o Releases y ejecuta dir
 
 ---
 
-### 2. Configura tu Aplicación Backend
+### 2. Configure Your Upstream Backend Application
 
-Por defecto, el WAF escucha en el puerto público `8080` y protege a tu aplicación que corre internamente en el puerto `3000`.  
-Puedes modificarlo editando `waf_config.toml` o por argumentos CLI:
+By default, the WAF listens on public port `8080` and reverse-proxies verified traffic to your internal backend application running on port `3000`.  
+Modify it in `waf_config.toml` or pass CLI flags:
 
 ```toml
-# Puerto público que recibe el tráfico de Internet
+# Public ingress port receiving internet traffic
 listen_addr = "0.0.0.0:8080"
 
-# Tu servidor backend real (Node.js, Python, Java, PHP, Go, etc.)
+# Target backend upstream server (Node.js, Python, Java, Go, Rust, PHP, etc.)
 upstream_url = "http://127.0.0.1:3000"
 
-# Modo de defensa: "block" (bloqueo perimetral activo) o "monitor" (detección dry-run)
+# Defense mode: "block" (active perimeter drop) or "monitor" (dry-run detection)
 mode = "block"
 ```
 
 ---
 
-### 3. Prueba tu Primer Bloqueo con Demostración Formal
+### 3. Verify Your First Block with Formal Mathematical Proof
 
-Una vez que el WAF está corriendo, lanza estas pruebas desde cualquier terminal o navegador:
+Once the WAF daemon is active, execute these tests from any terminal or browser:
 
-#### ✅ Petición Legítima (Permitida y Acelerada)
+#### ✅ Legitimate Request (Allowed & Accelerated)
 ```bash
 curl -i http://localhost:8080/
 ```
-> **Resultado:** HTTP `200 OK`, con la cabecera `X-Exactor-Protected: true` y una latencia de inspección inferior a $0.02\text{ ms}$.
+> **Result:** HTTP `200 OK`, returning header `X-Exactor-Protected: true` with inspection latency below $0.02\text{ ms}$.
 
-#### 🛑 Intento de Ataque SQL Injection (Bloqueado al Instante)
+#### 🛑 SQL Injection Attack Attempt (Instantly Blocked)
 ```bash
 curl -i "http://localhost:8080/?id=1'%20OR%201=1--"
 ```
-> **Resultado:** HTTP `403 Forbidden` en $< 0.05\text{ ms}$. El backend jamás recibe el ataque.  
-> La respuesta JSON contiene la prueba causal y la demostración formal en $\LaTeX$:
+> **Result:** HTTP `403 Forbidden` in $< 0.05\text{ ms}$. The backend never receives the malicious packet.  
+> The JSON payload contains the causal proof chain and formal $\LaTeX$ theorem:
 > ```json
 > {
 >   "action": "BLOCK",
@@ -96,104 +96,109 @@ curl -i "http://localhost:8080/?id=1'%20OR%201=1--"
 
 ---
 
-### 4. Monitoreo y Telemetría en Tiempo Real
+### 4. Real-Time Telemetry & Observability Endpoints
 
-El servidor incluye endpoints de observabilidad de alta frecuencia sin dependencias externas:
-- **Estado de Salud:** [`http://localhost:8080/health`](http://localhost:8080/health)
-- **Métricas de Rendimiento:** [`http://localhost:8080/api/waf/metrics`](http://localhost:8080/api/waf/metrics) (throughput, ataques bloqueados y latencia media en microsegundos).
-- **Inspección Rápida CLI (Sin levantar servidor):**
+The server exposes built-in ultra-low latency observability routes without external software dependencies:
+- **Health Check:** [`http://localhost:8080/health`](http://localhost:8080/health)
+- **Performance Telemetry:** [`http://localhost:8080/api/waf/metrics`](http://localhost:8080/api/waf/metrics) (throughput, blocked counts, p50/p99 latency in microseconds).
+- **Fast CLI Single-Payload Inspection (No server required):**
   ```bash
   exactor-waf-guardian inspect --query "id=1' OR 1=1--"
   ```
 
 ---
 
-## 🧠 ¿Por qué se debe Entrenar, Cómo Funciona y Cómo Descargar tu Licencia?
+## 🧠 Why Train, How Does It Work, and How to Obtain Your License?
 
-### 1. ¿Por qué se debe entrenar el WAF?
-El WAF viene de fábrica con **10 Islas de Certeza pre-configuradas** que bloquean instantáneamente los ataques conocidos en menos de $0.02\text{ ms}$.
+### 1. Why Does the WAF Need Training?
+The WAF ships out-of-the-box with **10 pre-configured Certainty Islands** that drop known attack archetypes in under $0.02\text{ ms}$.
 
-Sin embargo, en el mundo real, los atacantes **mutan y camuflan continuamente sus ataques**:
-- Inyectan SQLi usando comentarios `/*...*/`, espacios hexadecimales, JSON anidados o cabeceras falsas.
-- Cada variación genera un **mintérmino nuevo** en el hipercubo booleano $\{0, 1\}^{128}$ que el WAF bloquea y registra en su base de datos local SQLite (`waf_ledger.db`).
-- **Si no se entrenara:** El WAF tendría que almacenar miles de casos específicos sueltos en memoria RAM, saturando la caché del procesador y volviéndose lento.
-- **Al entrenar en EXACTOR CORE:** El algoritmo en la nube ejecuta una **Síntesis Inductiva Exacta**:
-  1. Descarta todas las variables de camuflaje (*Don't Cares*).
-  2. Extrae el **Implicante Primo Mínimo** (la fórmula raíz irreductible).
-  3. **Generaliza la protección al 100%:** Inmuniza al servidor no solo contra los ataques ya vistos, sino contra **trillones de mutaciones futuras** con ese mismo núcleo, reduciendo miles de reglas a una sola instrucción de microprocesador (`AND & CMP`).
+In real-world production environments, adversaries **continuously mutate and disguise their vectors**:
+- Injecting SQLi via inline comments `/*...*/`, hexadecimal encodings, deeply nested JSON, or spoofed headers.
+- Each mutation spawns a **novel minterm** within the Boolean hypercube $\{0, 1\}^{128}$, which the local WAF blocks and logs into its SQLite WAL database (`waf_ledger.db`).
+- **Without Training:** The WAF would need to retain thousands of isolated minterm cases in RAM, causing CPU cache thrashing and degraded throughput.
+- **With EXACTOR CORE Cloud Training:** The cloud algorithm executes **Exact Inductive Synthesis**:
+  1. Strips all camouflage variables (*Don't Cares*).
+  2. Extracts the **Minimal Prime Implicant** (the irreducible algebraic root formula).
+  3. **Generalizes protection to 100%:** Immunizes the server not only against previously observed variants, but against **trillions of future permutations** sharing that core, collapsing thousands of rules into a single CPU register instruction (`AND & CMP`).
 
 ---
 
-### 2. ¿Cómo se entrena?
-El WAF ofrece dos modos de entrenamiento:
-1. **Automático en Segundo Plano (Recomendado):**  
-   El demonio revisa periódicamente los casos anómalos acumulados en `waf_ledger.db`, los empaqueta y los envía a la nube cada 5 minutos (`autonomous_sync_interval_secs = 300`). La nueva regla sintetizada se **hot-compila en memoria RAM en 1 microsegundo**, sin reiniciar el servidor ni interrumpir conexiones.
-2. **Manual por CLI:**  
-   Puedes forzar la sincronización y aprendizaje inmediato en cualquier momento:
+### 2. How Does Training Run?
+The WAF provides two training modes:
+1. **Autonomous Background Sync (Recommended):**  
+   The daemon scans pending anomaly minterms accumulated in `waf_ledger.db`, batches them, and dispatches them to the cloud every 5 minutes (`autonomous_sync_interval_secs = 300`). The synthesized rule is **hot-compiled into RAM in 1 microsecond**, without restarting the daemon or interrupting live client connections.
+2. **Manual CLI Sync:**  
+   Trigger immediate synchronization and cloud synthesis on demand:
    ```bash
    exactor-waf-guardian sync-simplify --config /etc/exactor/waf_config.toml
    ```
 
 ---
 
-### 3. ¿Cómo obtener una Licencia de EXACTOR CORE?
-Para conectar tu WAF con el motor de síntesis matemática en la nube y habilitar el aprendizaje continuo, necesitas un **Token de Licencia**:
+### 3. How to Obtain an EXACTOR CORE License Token?
+To connect your WAF with the cloud mathematical synthesis engine and enable continuous learning, obtain a **License Token**:
 
-1. **Crea tu cuenta en EXACTOR:**  
-   Regístrate en [https://exactor.tech/register.html](https://exactor.tech/register.html).
-2. **Elige tu Plan de Silicon Units (SU):**  
-   - **Plan Gratuito:** Incluye **100 SU / mes** para pruebas y laboratorios.
-   - **Plan Scout ($20 USD/mes):** 1,000 SU / mes (hasta 20 variables / 2.5K mintérminos).
-   - **Plan Pro / Dev ($49 USD/mes):** 5,000 SU / mes (hasta 64 variables / 10K mintérminos).
-   - **Plan Startup ($499 USD/mes):** 50,000 SU / mes (hasta 128 variables / 100K mintérminos).
-3. **Obtén tu API Token:**  
-   En tu panel de control de EXACTOR ([https://exactor.tech/token-manager.html](https://exactor.tech/token-manager.html)), copia tu **API Token** (`ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+1. **Create an EXACTOR Account:**  
+   Register at [https://exactor.tech/register.html](https://exactor.tech/register.html).
+2. **Select a Silicon Unit (SU) Plan:**  
+   - **Free Plan:** Includes **100 SU / month** for testing and lab validation.
+   - **Scout Plan ($20 USD/mo):** 1,000 SU / month (up to 20 variables / 2.5K minterms).
+   - **Pro / Dev Plan ($49 USD/mo):** 5,000 SU / month (up to 64 variables / 10K minterms).
+   - **Startup Plan ($499 USD/mo):** 50,000 SU / month (up to 128 variables / 100K minterms).
+3. **Copy Your API Token:**  
+   In your EXACTOR dashboard ([https://exactor.tech/token-manager.html](https://exactor.tech/token-manager.html)), copy your **API Token** (`ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
 
 ---
 
-### 4. ¿Cómo se Configura la Licencia en el WAF?
+### 4. How to Configure the License in the WAF?
 
-#### Opción A: En el archivo `waf_config.toml` (Recomendado)
-Edita `/etc/exactor/waf_config.toml` (Linux) o `C:\ProgramData\Exactor\WAF\waf_config.toml` (Windows):
+#### Option A: Inside `waf_config.toml` (Recommended)
+Edit `/etc/exactor/waf_config.toml` (Linux) or `C:\ProgramData\Exactor\WAF\waf_config.toml` (Windows):
 
 ```toml
-# URL oficial de la API de síntesis booleana EXACTOR CORE
+# Official EXACTOR CORE Boolean synthesis API endpoint
 exactor_api_url = "https://exactor.tech/api/simplify"
 
-# Tu Licencia / API Token de EXACTOR CORE
+# Your EXACTOR CORE License / API Token
 exactor_api_token = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# Habilitar el aprendizaje y síntesis autónoma continua
+# Enable continuous autonomous learning and synthesis
 auto_sync_enabled = true
 
-# Intervalo de entrenamiento en segundos (por defecto: 300s = 5 minutos)
+# Training synchronization interval in seconds (default: 300s = 5 minutes)
 autonomous_sync_interval_secs = 300
 ```
 
-#### Opción B: Mediante Variable de Entorno (Docker / Kubernetes)
+#### Option B: Via Environment Variables (Docker / Kubernetes)
 ```bash
 export EXACTOR_API_TOKEN="ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 export EXACTOR_API_URL="https://exactor.tech/api/simplify"
 ```
-En `docker-compose.yml`:
+In `docker-compose.yml`:
 ```yaml
 environment:
   - EXACTOR_API_URL=https://exactor.tech/api/simplify
   - EXACTOR_API_TOKEN=ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-#### Opción C: Verificar la Conexión de tu Licencia
-Para confirmar que tu licencia es válida y probar la comunicación con el motor de síntesis:
+#### Option C: Verify Your License Connection
+To test communication with the cloud synthesis engine:
 ```bash
 exactor-waf-guardian sync-simplify --config waf_config.toml
 ```
-Salida esperada en consola:
+Expected terminal output:
 ```text
 ⚡ Exactor WAF: Initiating Exact Boolean Simplification
    Target: https://exactor.tech/api/simplify
 📥 Found 15 pending anomaly minterms to simplify.
 ✅ Cloud Simplification Succeeded!
    Reduction Percentage : 93.33%
+   Original Gates       : 45
+   New Gates            : 3
+```
+
+---   Reduction Percentage : 93.33%
    Original Gates       : 45
    New Gates            : 3
 ```
@@ -322,58 +327,58 @@ Compares Accuracy, False Negatives, False Positives, Latency, and Cost across al
 | **Behavioral Defense** | Rudimentary iptables | Slow batch heuristics | **Sliding Window Ring Counters** |
 | **Autonomous Evolution** | Slow manual CRS releases | Costly model fine-tuning | **Real-Time Boolean Minimization** |
 
-> 📖 **Para una comparativa técnica en profundidad:** Consulte el informe [COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md](COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md) con el desglose de los cuatro problemas estructurales de la era anterior (RegEx y Cloud AI) y las pruebas empíricas de benchmarking.
+> 📖 **In-Depth Comparative Analysis:** See the technical report [COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md](COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md) for the complete breakdown of the four structural failures of the pre-EXACTOR era (RegEx and Cloud AI) alongside empirical benchmark findings.
 
 ---
 
-## 🛠️ Zero-Dependency Installation (Instalación Sin Dependencias)
+## 🛠️ Zero-Dependency Installation
 
-El cliente **NO necesita instalar nada** en su servidor (sin Rust, sin Cargo, sin Python, sin compiladores C/C++ ni dependencias externas). El binario es 100% autocontenido y de enlace estático.
+Clients **do not need to install runtime dependencies** on their servers (no Rust toolchains, no Cargo, no Python runtimes, no C/C++ compilers, and no dynamic shared libraries). The binary is 100% self-contained and statically linked.
 
-### Método 1: Instalación Rápida One-Liner (Recomendado para Producción)
+### Method 1: Quick One-Liner Installer (Recommended for Production)
 
-#### En Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
-Ejecute directamente en la terminal como root:
+#### On Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
+Run directly in your terminal as root:
 ```bash
 curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
 ```
-> **¿Qué hace automáticamente?**
-> 1. Detecta la arquitectura (`x86_64` o `aarch64/ARM64`).
-> 2. Descarga e instala el binario estático en `/usr/local/bin/exactor-waf-guardian`.
-> 3. Despliega la configuración en `/etc/exactor/waf_config.toml`.
-> 4. Registra e inicia el demonio de sistema `systemd` (`exactor-waf.service`).
+> **What does it do automatically?**
+> 1. Detects system architecture (`x86_64` or `aarch64/ARM64`).
+> 2. Installs the static binary to `/usr/local/bin/exactor-waf-guardian`.
+> 3. Deploys default configuration to `/etc/exactor/waf_config.toml`.
+> 4. Registers and starts the `systemd` system daemon (`exactor-waf.service`).
 
-#### En Windows Server
-Ejecute en PowerShell como Administrador:
+#### On Windows Server
+Run in PowerShell as Administrator:
 ```powershell
 irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
 ```
-> **¿Qué hace automáticamente?**
-> 1. Despliega el ejecutable en `C:\Program Files\Exactor\WAF\exactor-waf-guardian.exe`.
-> 2. Despliega la configuración en `C:\ProgramData\Exactor\WAF\waf_config.toml`.
-> 3. Agrega la ruta al `System PATH` (accesible desde cualquier consola).
-> 4. Registra e inicia el Servicio de Windows `ExactorWAF` con arranque automático.
+> **What does it do automatically?**
+> 1. Installs the executable to `C:\Program Files\Exactor\WAF\exactor-waf-guardian.exe`.
+> 2. Deploys default configuration to `C:\ProgramData\Exactor\WAF\waf_config.toml`.
+> 3. Appends the directory to `System PATH` (accessible globally from any prompt).
+> 4. Registers and launches the `ExactorWAF` Windows Service configured for automatic startup.
 
 ---
 
-### Método 2: Paquetes Autónomos Offline (`dist/` ZIP / TAR.GZ)
+### Method 2: Offline Self-Contained Packages (`dist/` ZIP / TAR.GZ)
 
-Para servidores con conectividad restringida o políticas empresariales que prohíben descargas por script:
+For air-gapped servers, restricted network perimeters, or environments where piped script execution is restricted:
 
-1. **Descargue el paquete precompilado:**
+1. **Download the precompiled bundle:**
    - **Windows:** `exactor-waf-guardian-v0.1.0-windows-x86_64.zip`
    - **Linux:** `exactor-waf-guardian-v0.1.0-linux-x86_64.tar.gz`
-2. **Descomprima e instale en un clic:**
-   - En Windows:
+2. **Extract and install with a single command:**
+   - On Windows:
      ```powershell
      powershell -ExecutionPolicy Bypass -File .\install.ps1
      ```
-   - En Linux:
+   - On Linux:
      ```bash
      sudo ./install.sh
      ```
-3. **Ejecución Portable (Sin instalación):**
-   Si no desea tocar servicios de sistema, ejecute el binario directamente:
+3. **Portable Execution (Zero System Modifications):**
+   If you prefer not to register system services, execute the binary directly:
    ```bash
    # Windows
    .\exactor-waf-guardian.exe proxy --config .\waf_config.toml
@@ -382,36 +387,36 @@ Para servidores con conectividad restringida o políticas empresariales que proh
    ./exactor-waf-guardian proxy --config ./waf_config.toml
    ```
 
-Para generar estos paquetes desde el repositorio:
+To generate standalone distribution packages locally:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\package_dist.ps1 -NoRebuild
 ```
-o en Linux:
+or on Linux:
 ```bash
 ./scripts/package_dist.sh --no-rebuild
 ```
 
 ---
 
-### Método 3: Despliegue en Contenedor (Docker & Docker Compose)
+### Method 3: Container Deployment (Docker & Docker Compose)
 
-Para entornos basados en contenedores sin tocar el sistema operativo anfitrión:
+For container-native environments without host modifications:
 
 ```bash
-# Iniciar inmediatamente con Docker Compose
+# Start immediately in background with Docker Compose
 docker compose up -d
 
-# Ver logs de inspección en tiempo real
+# Stream real-time inspection telemetry and logs
 docker compose logs -f exactor-waf
 ```
 
 ---
 
-### Desinstalación Limpia
+### Clean Uninstallation
 
-Para desinstalar completamente el servicio y binarios sin dejar rastros:
-- **En Windows:** `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1`
-- **En Linux:** `sudo ./uninstall.sh` (o `sudo ./uninstall.sh --purge` para eliminar también la base de datos de auditoría).
+To completely remove the service, configuration, and binaries without leaving orphaned artifacts:
+- **On Windows:** `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1`
+- **On Linux:** `sudo ./uninstall.sh` (or `sudo ./uninstall.sh --purge` to also remove the audit database).
 
 ---
 
