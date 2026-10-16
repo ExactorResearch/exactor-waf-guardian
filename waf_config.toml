@@ -52,3 +52,10 @@ stateful_ban_secs = 180
 # Optional Redis connection URL for distributed cluster state synchronization (leave empty for built-in high-speed in-memory ring buffer)
 # redis_url = "redis://127.0.0.1:6379"
 
+# ==============================================================================
+# ENVOY PROXY EXT_AUTHZ INTEGRATION
+# ==============================================================================
+# Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter
+# When enabled, Envoy offloads SAT security checks to Exactor at sub-millisecond speeds.
+# envoy_ext_authz_addr = "0.0.0.0:9002"
+

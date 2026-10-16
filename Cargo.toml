@@ -10,7 +10,7 @@ description = "Production-grade, sub-millisecond SAT Web Application Firewall (W
 # Async Runtime & Networking
 tokio = { version = "1.38", features = ["full"] }
 axum = { version = "0.7.5" }
-tower = { version = "0.4" }
+tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5.2", features = ["cors", "trace", "timeout"] }
 http-body-util = "0.1"
 hyper = { version = "1.4", features = ["full"] }

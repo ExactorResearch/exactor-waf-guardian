@@ -5,6 +5,7 @@ use exactor_waf_guardian::benchmark::BenchmarkSuite;
 use exactor_waf_guardian::cloud::{ExactorCloudClient, SimplifyRequest};
 use exactor_waf_guardian::config::WafConfig;
 use exactor_waf_guardian::engine::ExactorSatEngine;
+use exactor_waf_guardian::envoy::{create_envoy_authz_router, EnvoyAuthzState};
 use exactor_waf_guardian::ledger::SqliteLedger;
 use exactor_waf_guardian::proxy::{proxy_handler, ProxyState};
 use exactor_waf_guardian::stateful::StatefulRateLimiter;
@@ -83,6 +84,13 @@ enum Commands {
         #[arg(short, long, default_value_t = 10000)]
         requests: usize,
     },
+
+    /// Run as an Envoy ext_authz HTTP verification service
+    EnvoyAuthz {
+        /// Inbound listen address for Envoy ext_authz (e.g. 0.0.0.0:9002)
+        #[arg(short, long)]
+        listen: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -128,6 +136,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 config.mode = m;
             }
             run_server(config).await
+        }
+        Some(Commands::EnvoyAuthz { listen }) => {
+            if let Some(l) = listen {
+                config.envoy_ext_authz_addr = Some(l);
+            }
+            run_envoy_authz_standalone(config).await
         }
         None => {
             // Default command is to run the server
@@ -232,6 +246,31 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         });
     }
 
+    // Optional concurrent Envoy ext_authz HTTP verification service
+    if let Some(ref envoy_addr_str) = config.envoy_ext_authz_addr {
+        let envoy_state = EnvoyAuthzState::new(
+            engine.clone(),
+            ledger.clone(),
+            stateful_limiter.clone(),
+            config.mode.clone(),
+        );
+        let envoy_app = create_envoy_authz_router(envoy_state);
+        let envoy_addr: SocketAddr = envoy_addr_str.parse()?;
+        let envoy_listener = tokio::net::TcpListener::bind(envoy_addr).await?;
+        info!(target: "exactor::envoy", "Envoy ext_authz HTTP verification listener ready on http://{}", envoy_addr);
+
+        tokio::spawn(async move {
+            if let Err(e) = axum::serve(
+                envoy_listener,
+                envoy_app.into_make_service_with_connect_info::<SocketAddr>(),
+            )
+            .await
+            {
+                tracing::error!(target: "exactor::envoy", "Envoy ext_authz service error: {}", e);
+            }
+        });
+    }
+
     // Combine Management API and Proxy Router
     let app = axum::Router::new()
         .merge(create_api_router())
@@ -326,6 +365,57 @@ async fn run_sync_simplify(
     ledger.record_simplification(&resp, vars.len(), pending.len()).await?;
     ledger.mark_anomalies_simplified(&pending).await?;
     println!("💾 Ledger updated. Anomalies marked as SIMPLIFIED.");
+
+    Ok(())
+}
+
+/// Runs the standalone Envoy ext_authz verification service.
+async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!(
+        r#"
+  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
+  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
+  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
+  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
+  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
+  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
+             WAF GUARDIAN - ENVOY EXT_AUTHZ SERVICE
+      Powered by EXACTOR Core & https://exactor.tech
+    "#
+    );
+
+    let listen_addr = config
+        .envoy_ext_authz_addr
+        .clone()
+        .unwrap_or_else(|| "0.0.0.0:9002".to_string());
+
+    info!(target: "exactor::envoy", "Starting Exactor Envoy ext_authz Service v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::envoy", "ext_authz Listen Address: {}", listen_addr);
+    info!(target: "exactor::envoy", "Defense Mode            : {}", config.mode.to_uppercase());
+    info!(target: "exactor::envoy", "Cloud API URL           : {}", config.exactor_api_url);
+    info!(target: "exactor::envoy", "SQLite Ledger           : {}", config.database_path);
+
+    let engine = Arc::new(ExactorSatEngine::new());
+    let ledger = SqliteLedger::init(&config.database_path).await?;
+    let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
+
+    let envoy_state = EnvoyAuthzState::new(
+        engine,
+        ledger,
+        stateful_limiter,
+        config.mode.clone(),
+    );
+
+    let app = create_envoy_authz_router(envoy_state);
+    let addr: SocketAddr = listen_addr.parse()?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(target: "exactor::envoy", "Exactor Envoy ext_authz listening on http://{}", addr);
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
 
     Ok(())
 }

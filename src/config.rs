@@ -54,6 +54,9 @@ pub struct WafConfig {
 
     /// Optional Redis connection URL (e.g. redis://127.0.0.1:6379).
     pub redis_url: Option<String>,
+
+    /// Optional Envoy ext_authz HTTP listener address (e.g. 0.0.0.0:9002).
+    pub envoy_ext_authz_addr: Option<String>,
 }
 
 fn default_mode() -> String {
@@ -113,6 +116,7 @@ impl Default for WafConfig {
             stateful_window_secs: default_window_secs(),
             stateful_ban_secs: default_ban_secs(),
             redis_url: None,
+            envoy_ext_authz_addr: None,
         }
     }
 }
@@ -165,6 +169,9 @@ impl WafConfig {
         }
         if let Ok(v) = std::env::var("WAF_DATABASE_PATH") {
             cfg.database_path = v;
+        }
+        if let Ok(v) = std::env::var("ENVOY_EXT_AUTHZ_ADDR") {
+            cfg.envoy_ext_authz_addr = Some(v);
         }
 
         cfg
