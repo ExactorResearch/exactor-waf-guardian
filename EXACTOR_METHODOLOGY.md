@@ -99,5 +99,5 @@ Exactor proves that **formal deterministic mathematics and propositional SAT inv
 ---
 
 ### Further Reading
-- [Supervisión Axiomática y Síntesis Inductiva en EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md): Estudio a fondo sobre cómo aprende, clasifica y generaliza el WAF sin etiquetado humano manual mediante la reducción de mintérminos y consumo de Silicon Units (SU).
+- [Axiomatic Supervision and Inductive Synthesis in EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md): In-depth theoretical study on how the WAF classifies, learns, and generalizes without manual human labeling via minterm reduction and Silicon Unit (SU) consumption.
 - [Interactive Proof of Concept & Duel Suite](PROOF_OF_CONCEPT.md)

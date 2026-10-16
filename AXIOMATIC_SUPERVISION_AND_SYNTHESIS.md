@@ -1,200 +1,200 @@
-# 📘 Supervisión Axiomática y Síntesis Inductiva en EXACTOR
-## Fundamento Epistémico: Cómo aprende, clasifica y generaliza el WAF sin etiquetado humano
+# 📘 Axiomatic Supervision and Inductive Synthesis in EXACTOR
+## Epistemic Foundation: How the WAF Learns, Classifies, and Generalizes Without Human Labeling
 
 ---
 
-### Resumen Ejecutivo
+### Executive Summary
 
-Una de las preguntas más críticas y disruptivas sobre el paradigma de **EXACTOR WAF Guardian** es:  
-> *«Si el entrenamiento de EXACTOR no es supervisado por humanos etiquetando datos a mano... ¿cómo sabe el sistema qué es un ataque y qué no? Y si los invariantes ya detectan los ataques... ¿para qué se necesita entrenar?»*
+One of the most critical and disruptive questions regarding the **EXACTOR WAF Guardian** paradigm is:  
+> *“If EXACTOR training is not supervised by humans labeling datasets by hand... how does the system know what constitutes an attack and what is benign? And if formal invariants already detect attacks... why is training needed at all?”*
 
-La respuesta reside en la transición de la **Inteligencia Artificial Probabilística** (redes neuronales basadas en aproximaciones estadísticas) a la **Computación Neuro-Simbólica y el Álgebra Booleana Exacta**:
+The answer lies in the transition from **Probabilistic Artificial Intelligence** (neural networks based on statistical curve fitting) to **Neuro-Symbolic Computing and Exact Boolean Algebra**:
 
-1. **La Etiqueta es un Teorema:** El WAF no adivina ni calcula probabilidades; la etiqueta $F(\mathbf{x}) = 1$ (*Es un Ataque*) surge de la **Supervisión Axiomática** impuesta por las gramáticas formales de los protocolos.
-2. **El Entrenamiento es Síntesis Inductiva:** El entrenamiento en la nube ([`https://exactor.tech/api/simplify`](https://exactor.tech/api/simplify)) no ajusta pesos neuronales; **elimina el camuflaje** (*Don't Cares*), extrae el **Implicante Primo Mínimo** y generaliza la protección contra trillones de variantes futuras en una sola instrucción de microprocesador.
-3. **El Valor Comercial:** Este cómputo de síntesis lógica de alta densidad es el núcleo donde se consumen y facturan las **Silicon Units (SU)**.
+1. **The Label is a Mathematical Theorem:** The WAF neither guesses nor computes statistical probabilities; the classification label $F(\mathbf{x}) = 1$ (*Confirmed Attack*) originates from **Axiomatic Supervision** enforced by formal protocol grammars.
+2. **Training is Inductive Synthesis:** Cloud training ([`https://exactor.tech/api/simplify`](https://exactor.tech/api/simplify)) does not tune weight matrices; it **strips obfuscation camouflage** (*Don't Cares*), extracts the **Minimal Prime Implicant**, and generalizes protection against trillions of future variants into a single microprocessor instruction.
+3. **Commercial Model:** This high-density logic synthesis computation is the engine through which **Silicon Units (SU)** are consumed and monetized.
 
 ---
 
-## 1. ¿Quién le pone la "etiqueta" de que es un ataque? (La Supervisión Axiomática)
+## 1. Who Labels the Payload as an Attack? (Axiomatic Supervision)
 
-En el Machine Learning tradicional (Deep Learning, clasificadores probabilísticos, Random Forests), el entrenamiento requiere miles o millones de ejemplos etiquetados manualmente por humanos:
-$$\mathcal{D}_{\text{Tradicional}} = \{(x_1, y_1), (x_2, y_2), \dots, (x_m, y_m)\}, \quad y_i \in \{0, 1\}$$
-Donde humanos deben clasificar: *"este texto es benigno ($y=0$), este texto es malicioso ($y=1$)"*.
+In traditional Machine Learning (Deep Learning, probabilistic classifiers, Random Forests), model training requires millions of manually curated examples labeled by humans:
+$$\mathcal{D}_{\text{Traditional}} = \{(x_1, y_1), (x_2, y_2), \dots, (x_m, y_m)\}, \quad y_i \in \{0, 1\}$$
+where human reviewers decide: *"this payload is benign ($y=0$), this payload is malicious ($y=1$)"*.
 
-En ciberseguridad perimetral y bancaria de alta frecuencia, este enfoque es **inviable y peligroso**:
-- Depende de la subjetividad humana o del sesgo estadístico de los datasets.
-- Produce **falsos positivos catastróficos** cuando el tráfico legítimo contiene sintaxis compleja no contemplada en el entrenamiento.
+In high-frequency banking and edge perimeter cybersecurity, this approach is **fundamentally flawed and hazardous**:
+- It introduces human subjectivity and statistical dataset bias.
+- It produces **catastrophic false positives** when legitimate application traffic carries complex syntax not represented in the training distribution.
 
-### El Enfoque Exactor: Las Gramáticas Formales como Axiomas
-Las vulnerabilidades informáticas dependen de **leyes matemáticas y restricciones gramaticales rígidas** (especificadas en RFCs, gramáticas BNF de SQL, W3C DOM, JSON RFC 8259, GraphQL y RFC 7519 de JWT):
+### The EXACTOR Approach: Formal Grammars as Axioms
+Computer vulnerabilities obey **mathematical laws and rigid grammatical constraints** defined across formal standards (RFCs, BNF SQL grammars, W3C DOM specifications, JSON RFC 8259, GraphQL AST, and JWT RFC 7519):
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   SUPERVISIÓN AXIOMÁTICA DETERMINISTA                  │
+│                   DETERMINISTIC AXIOMATIC SUPERVISION                  │
 ├───────────────────────────────────┬────────────────────────────────────┤
-│ DOMINIO SINTÁCTICO                │ INVARIANTE FORMAL DE SEGURIDAD     │
+│ SYNTACTIC DOMAIN                  │ FORMAL SECURITY INVARIANT          │
 ├───────────────────────────────────┼────────────────────────────────────┤
-│ SQL Relacional                    │ Imposibilidad de alterar la        │
-│ (RFC / Gramática BNF)             │ cardinalidad con tautologías       │
-│                                   │ o inyecciones UNION no tipadas.    │
+│ Relational SQL                    │ Impossibility of altering result   │
+│ (RFC / BNF Grammar)               │ cardinality via tautologies or     │
+│                                   │ untyped UNION exfiltration.        │
 ├───────────────────────────────────┼────────────────────────────────────┤
-│ JavaScript / Node.js Engine       │ Prohibición de mutar las           │
-│ (ECMAScript Spec)                 │ propiedades reservadas __proto__   │
-│                                   │ o constructor.prototype.           │
+│ JavaScript / Node.js Engine       │ Absolute prohibition against       │
+│ (ECMAScript Spec)                 │ mutating reserved prototype keys:  │
+│                                   │ __proto__ or constructor.prototype │
 ├───────────────────────────────────┼────────────────────────────────────┤
-│ Autenticación Criptográfica       │ Nulidad de tokens con algoritmo    │
-│ (JWT RFC 7519)                    │ "none" o sin firma criptográfica.  │
+│ Cryptographic Authentication      │ Automatic invalidation of tokens   │
+│ (JWT RFC 7519)                    │ using algorithm "none" or missing  │
+│                                   │ cryptographic signatures.          │
 ├───────────────────────────────────┼────────────────────────────────────┤
-│ GraphQL AST Specification         │ Profundidad recursiva acotada      │
-│ (GraphQL Foundation)              │ y bloqueo de introspección schema. │
+│ GraphQL AST Specification         │ Strictly bounded recursion depth   │
+│ (GraphQL Foundation)              │ and blocked schema introspection.  │
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
-Cuando una petición web llega a **Exactor WAF Guardian**, el **AST Lexer** la normaliza y extrae sus tokens estructurales. Si la petición viola cualquiera de las **10 Islas de Certeza**, el motor asigna:
-$$\mathbf{F(\mathbf{x}) = 1 \quad \implies \quad \text{ETIQUETA FORMAL: ES UN ATAQUE}}$$
+When an HTTP request enters **Exactor WAF Guardian**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands (Islas de Certeza)**, the engine assigns:
+$$\mathbf{F(\mathbf{x}) = 1 \quad \implies \quad \text{FORMAL LABEL: CONFIRMED ATTACK}}$$
 
-> **Conclusión Epistémica:**  
-> La etiqueta $F(\mathbf{x}) = 1$ no es una estimación probabilística ni la opinión de un moderador humano. Es un **teorema formal comprobado por el SAT Solver en microsegundos**: *la petición contiene una combinación de primitivas que busca forzar al intérprete a violar su especificación de seguridad.*
+> **Epistemic Conclusion:**  
+> The label $F(\mathbf{x}) = 1$ is neither a probabilistic guess nor a subjective human rating. It is a **formal theorem proven by the SAT Solver in microseconds**: *the request contains a combination of primitives whose sole execution path forces the interpreter to violate its formal security specification.*
 
 ---
 
-## 2. La Gran Paradoja: *"Si el WAF ya sabe que es un ataque por el invariante... ¿para qué se necesita entrenar?"*
+## 2. The Great Paradox: *"If the WAF already knows an attack by its invariant... why is training needed?"*
 
-Esta es la pieza donde todo encaja a nivel computacional y financiero.
+This is where computational theory aligns directly with business value.
 
-### El Problema de la Mutación y el Camuflaje
-Cuando un atacante (o una botnet automatizada) detecta que un firewall bloquea un vector simple como `' OR 1=1`, no se detiene. Empieza a **mutar el ataque agregando capas de ofuscación y camuflaje**:
+### The Problem of Mutation and Camouflage
+When an attacker (or an automated botnet) discovers that a perimeter firewall drops a basic payload like `' OR 1=1`, they do not stop. They begin **mutating the attack by layering obfuscation and camouflage**:
 
-* **Ataque 1:** Envía el SQLi con comentarios en línea:  
+* **Attack 1:** SQLi with inline comments:  
   `id=1'/*foo*/OR/*bar*/1=1--`  
-  *(Activa: $v_0$ comilla, $v_1$ tautología, $v_{16}$ ofuscación de comentarios)*.
-* **Ataque 2:** Envía el SQLi dentro de un payload JSON de 2 MB con caracteres nulos:  
-  *(Activa: $v_0$ comilla, $v_1$ tautología, $v_{20}$ cuerpo grande, $v_{21}$ byte nulo)*.
-* **Ataque 3:** Envía el SQLi con un User-Agent falsificado y codificación URL recursiva:  
-  *(Activa: $v_0$ comilla, $v_1$ tautología, $v_{17}$ user-agent sospechoso, $v_{23}$ cabecera inusual)*.
-* **Ataques 4 a 1,000:** La botnet dispara **1,000 combinaciones distintas** de parámetros intentando encontrar una fuga en el perímetro.
+  *(Triggers: $v_0$ quote, $v_1$ tautology, $v_{16}$ comment obfuscation).*
+* **Attack 2:** SQLi embedded inside a 2 MB JSON payload with null bytes:  
+  *(Triggers: $v_0$ quote, $v_1$ tautology, $v_{20}$ large body, $v_{21}$ null byte).*
+* **Attack 3:** SQLi sent with a spoofed User-Agent and recursive percent-encoding:  
+  *(Triggers: $v_0$ quote, $v_1$ tautology, $v_{17}$ suspicious user-agent, $v_{23}$ unusual header).*
+* **Attacks 4 through 1,000:** The botnet fires **1,000 distinct combinations** attempting to discover an edge leak.
 
-### ¿Qué ocurriría si NO existiera el Entrenamiento?
-El WAF local va a bloquear los 1,000 ataques en tiempo real gracias a sus invariantes básicos. Sin embargo, en el hipercubo booleano $\{0, 1\}^{128}$, cada una de las 1,000 variantes representa un **mintérmino específico diferente**:
-- Si el WAF intentara almacenar cada variante como una regla puntual en memoria RAM, **el servidor del cliente colapsaría por saturación de memoria y latencia de búsqueda**.
-- Almacenar miles de casos específicos es ineficiente y no previene mutaciones futuras que el atacante invente mañana.
+### What Happens Without Cloud Training?
+The local WAF will block all 1,000 requests in real time using its base invariants. However, within the Boolean hypercube $\{0, 1\}^{128}$, each of the 1,000 variants represents a **distinct point minterm**:
+- If the WAF attempted to store each variant as an isolated rule in RAM, **the server would experience CPU cache thrashing and memory exhaustion**.
+- Storing thousands of individual cases is inefficient and fails to prevent novel variations crafted tomorrow.
 
 ---
 
-### ¿Qué hace el "Entrenamiento" en `exactor.tech`? (Síntesis Inductiva)
+### What Does "Training" Do at `exactor.tech`? (Inductive Synthesis)
 
-El WAF toma los 1,000 mintérminos registrados en el SQLite WAL local (`waf_ledger.db`), todos etiquetados formalmente con $F=1$ (ataques confirmados), y los envía en segundo plano al servicio de síntesis:
+The local WAF batches the 1,000 minterms stored in its local SQLite WAL (`waf_ledger.db`), all formally labeled with $F=1$ (confirmed attacks), and dispatches them asynchronously to the synthesis service:
 
 ```text
 POST https://exactor.tech/api/simplify
 {
   "variables": ["v0_quote", "v1_tautology", "v16_obfuscated", "v20_large_body", ...],
-  "minterms": [34359738368, 34359738369, 549755813888, ...] // 1,000 mintérminos
+  "minterms": [34359738368, 34359738369, 549755813888, ...] // 1,000 minterms
 }
 ```
 
 ```mermaid
 graph TD
-    subgraph Cliente [Servidor Local del Cliente]
-        Ataques[1,000 Variantes de Ataque Mutado] --> AST[AST Lexer]
-        AST --> LocalSAT[Fast-Path SAT: Bloquea en 0.02ms]
-        LocalSAT --> SQLite[SQLite WAL: 1,000 Minterms en PENDING]
+    subgraph Client [Customer Local Server]
+        Attacks[1,000 Mutated Attack Variants] --> AST[AST Lexer]
+        AST --> LocalSAT[Fast-Path SAT: Drops in 0.02ms]
+        LocalSAT --> SQLite[SQLite WAL: 1,000 Minterms in PENDING status]
     end
 
     SQLite -.->|POST /api/simplify| Cloud
 
-    subgraph Cloud [Nube Central: exactor.tech]
-        CloudCore[Motor de Síntesis Exacta Quine-McCluskey / SAT]
-        CloudCore --> EliminaRuido[Elimina variables de camuflaje: Don't Cares]
-        EliminaRuido --> ExtraeRaiz[Extrae Implicante Primo Mínimo: v0 ∧ v1]
+    subgraph Cloud [Central Cloud: exactor.tech]
+        CloudCore[Exact Synthesis Engine Quine-McCluskey / SAT]
+        CloudCore --> StripNoise[Eliminates Camouflage Variables: Don't Cares]
+        StripNoise --> ExtractRoot[Extracts Minimal Prime Implicant: v0 ∧ v1]
     end
 
-    ExtraeRaiz -.->|Devuelve Ecuación Mínima| HotPatch[Hot-Compila en RAM Local]
+    ExtractRoot -.->|Returns Minimal Boolean Equation| HotPatch[Hot-Compiles in Local RAM]
     
-    subgraph ProteccionFutura [Defensa a Nivel de Hardware]
-        HotPatch --> CPU[1 Instrucción Bitwise: AND + CMP]
-        CPU --> Trillones[Protege contra 2^124 variantes futuras]
+    subgraph FutureDefense [Hardware-Level Defense]
+        HotPatch --> CPU[1 Bitwise Instruction: AND + CMP]
+        CPU --> Trillions[Immunizes Against 2^124 Future Variants]
     end
 ```
 
-#### Los 3 Efectos Revolucionarios de la Síntesis:
-1. **Eliminación del Camuflaje (*Don't Cares*):**  
-   El algoritmo matemático analiza las adyacencias dimensionales en el hipercubo y demuestra formalmente que las variables de camuflaje ($v_{16}, v_{20}, v_{21}, v_{17}, v_{23}$) son irrelevantes para la condición de ataque.
-2. **Extracción del Implicante Primo Mínimo:**  
-   Colapsa los 1,000 casos dispersos en la regla raíz canónica irreducible:
-   $$\text{Implicante Primo} = v_0 \land v_1$$
-3. **Generalización Inductiva Total ($100\%$ Exacta):**  
-   Al compilar esa regla raíz en la memoria local del WAF, el sistema **no solo bloquea los 1,000 casos que ya vio**, sino que **inmuniza instantáneamente al servidor contra cualquiera de las $2^{128-2} = 2^{126}$ posibles combinaciones futuras** que un atacante intente crear con ese núcleo.
-4. **Optimización Extrema:**  
-   Reduce 1,000 reglas en base de datos a **una sola instrucción bitwise a nivel de registros de CPU (`AND & CMP`)**, ejecutada en menos de $0.001\text{ ms}$.
+#### The 3 Breakthrough Impacts of Synthesis:
+1. **Camouflage Stripping (*Don't Cares*):**  
+   The mathematical algorithm computes dimensional adjacencies across the hypercube and formally proves that camouflage variables ($v_{16}, v_{20}, v_{21}, v_{17}, v_{23}$) are completely orthogonal to the attack condition.
+2. **Minimal Prime Implicant Extraction:**  
+   It collapses the 1,000 dispersed cases into the irreducible root rule:
+   $$\text{Prime Implicant} = v_0 \land v_1$$
+3. **Total Inductive Generalization ($100\%$ Exact):**  
+   When hot-compiled into the local WAF memory, the system **not only blocks the 1,000 cases it previously observed**, but **instantly immunizes the host against any of the $2^{128-2} = 2^{126}$ future permutations** an adversary could craft around that core.
+4. **Hardware-Speed Execution:**  
+   It compresses 1,000 database rules into **a single register-level CPU bitwise instruction (`AND & CMP`)**, executed in under $0.001\text{ ms}$.
 
 ---
 
-## 3. ¿Y qué pasa con ataques completamente nuevos (Zero-Days Semánticos)?
+## 3. What About Zero-Day Business Logic Attacks?
 
-¿Qué ocurre si aparece un vector de ataque inédito que no rompe una gramática universal estándar, sino una **vulnerabilidad de lógica de negocio propia del cliente**?
+What occurs when an unprecedented attack emerges that violates neither an RFC nor an international grammar, but rather a **customer-specific application logic flaw**?
 
-*Ejemplo:*  
-En la aplicación bancaria del cliente, una llamada a `POST /api/wire-transfer` que incluya un header no documentado `X-Debug-Role: superadmin` permite vaciar una cuenta sin autenticación.
+*Example:*  
+In a banking application, an undocumented header `X-Debug-Role: superadmin` sent to `POST /api/wire-transfer` allows unauthorized account drains.
 
-En este escenario entra la **Supervisión Externa (Humana o de Oráculo)**:
+In this scenario, **External Supervision (Human Analyst or Autonomous Oracle)** intervenes:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Analista as 🕵️ Analista SOC / Oráculo JEV
-    participant WAF as 🛡️ Exactor WAF Local
+    actor Analyst as 🕵️ SOC Analyst / JEV Oracle
+    participant WAF as 🛡️ Local Exactor WAF
     participant Cloud as ☁️ exactor.tech (API)
 
-    Analista->>WAF: 1. Identifica el nuevo vector de riesgo en logs
-    Analista->>Cloud: 2. Registra el vector y asigna etiqueta F(x) = 1 (Ataque)
-    Note over Cloud: 3. Síntesis y Minimización Booleana<br/>Consumo de Silicon Units (SU)
-    Cloud-->>WAF: 4. Despliega la nueva regla booleana compacta
-    Note over WAF: 5. Hot-compilación inmediata en memoria RAM<br/>Sin reiniciar servidores ni modificar código backend
-    Note over WAF: 6. Bloqueo determinista en 0.02 ms para siempre
+    Analyst->>WAF: 1. Discovers novel attack vector in audit logs
+    Analyst->>Cloud: 2. Registers vector and assigns label F(x) = 1 (Attack)
+    Note over Cloud: 3. Boolean Synthesis & Minimization<br/>Consumes Silicon Units (SU)
+    Cloud-->>WAF: 4. Deploys optimized, compact Boolean clause
+    Note over WAF: 5. Immediate hot-compilation in RAM<br/>Zero restart, zero backend modifications
+    Note over WAF: 6. Deterministic 0.02ms blocking in perpetuity
 ```
 
-1. **Detección:** El equipo de seguridad del cliente (o un agente cognitivo como JEV / LLM analizando patrones fuera de línea) identifica el nuevo vector.
-2. **Asignación de Etiqueta:** Se marca esa firma con $F(\mathbf{x}) = 1$.
-3. **Síntesis en la Nube:** Se despacha a `https://exactor.tech/api/simplify`.
-4. **Hot-Patching en Tiempo Real:** El WAF local descarga la regla y la incorpora a sus cláusulas dinámicas en microsegundos.
-5. **Resultado:** El cliente queda protegido a velocidad de hardware **sin haber tenido que esperar semanas a que sus programadores parchen el backend y sin reiniciar sus servidores**.
+1. **Identification:** The customer security team (or an offline cognitive agent such as JEV) discovers the anomalous vector.
+2. **Label Assignment:** The signature is formally assigned $F(\mathbf{x}) = 1$.
+3. **Cloud Synthesis:** The job is dispatched to `https://exactor.tech/api/simplify`.
+4. **Real-Time Hot-Patching:** The local WAF ingests the minimized rule into its active clauses in microseconds.
+5. **Outcome:** The perimeter is patched at hardware speed **without waiting weeks for development cycles or maintenance windows**.
 
 ---
 
-## 4. La Conexión con el Modelo de Negocio: Silicon Units (SU)
+## 4. Silicon Units (SU) Licensing Model
 
-Este mecanismo fundamenta la viabilidad comercial y la rentabilidad del producto:
+This architectural separation underpins the commercial efficiency of the product:
 
-* **El Tráfico Diario es Gratuito en Inferencia:**  
-  Las millones de visitas legítimas de clientes comprando o consultando la web se resuelven en la memoria RAM local a **costo marginal $0.00**. Esto hace que la oferta sea irresistible para el cliente frente a servicios que cobran por petición o por volumen de datos.
-* **El Cobro ocurre en el Aprendizaje (Cerebro):**  
-  Cada vez que el WAF local empaqueta hipercubos de ataques mutados para generalizar la defensa, o cuando el cliente sintetiza nuevas reglas para sus APIs, se ejecuta el algoritmo de síntesis de alta densidad en la nube.
-* **Medición en Silicon Units (SU):**  
-  Cada simplificación booleana descuenta **Silicon Units (SU)** según la complejidad combinatoria:
-  $$\text{Consumo SU} = \text{Mintérminos} \times \phi(\text{Variables})$$
-  - El cliente contrata un plan mensual con una bolsa de SU (ej. Plan STARTUP con 50,000 SU por $499 USD/mes).
-  - Si una oleada de ataques o nuevas APIs supera su cuota, se factura el exceso (**$8 USD por cada 1,000 SU extra**).
+* **Production Traffic Incurs Zero Marginal Cost:**  
+  Millions of legitimate daily customer requests are inspected in local RAM at **$0.00 marginal inference cost**.
+* **Billing Applies Exclusively to Synthesis (The Brain):**  
+  Silicon Units are consumed only when the local daemon batches hypercube minterms for inductive generalization, or when new custom API rules are synthesized.
+* **Silicon Unit (SU) Calculation:**  
+  $$\text{SU Consumption} = \text{Minterms} \times \phi(\text{Variables})$$
+  - Customers subscribe to monthly plans with bundled Silicon Units (e.g., STARTUP Plan: 50,000 SU for $499 USD/month).
+  - High-volume attack surges or extensive API expansions draw from overage pools (**$8 USD per 1,000 additional SU**).
 
 ---
 
-## 5. Cuadro Comparativo: Paradigmas de Detección
+## 5. Architectural Comparison: Detection Paradigms
 
-| Característica | Machine Learning Clásico (Deep Learning) | Expresiones Regulares (ModSecurity / CRS) | EXACTOR (Supervisión Axiomática + SAT) |
+| Feature | Classic Machine Learning (Deep Learning) | Regular Expressions (ModSecurity / CRS) | EXACTOR (Axiomatic Supervision + SAT) |
 | :--- | :---: | :---: | :---: |
-| **Origen de la Etiqueta** | Subjetiva (Etiquetado humano manual) | Manual (Firmas fijas de analistas) | **Axiomática (Teoremas sobre gramáticas formales)** |
-| **Naturaleza de la Decisión** | Probabilística (Score $0.0 - 1.0$) | Coincidencia de texto (String match) | **Determinista SAT ($\text{TRUE} \lor \text{FALSE}$)** |
-| **Resistencia al Camuflaje** | Vulnerable a ataques adversarios | Vulnerable a evasión por encoding | **Absoluta (Generalización por Implicantes Primos)** |
-| **Latencia de Evaluación** | Inaceptable ($350 - 650\text{ ms}$) | Lenta / Variable ($2 - 10\text{ ms}$) | **Ultra-Rápida ($< 0.05\text{ ms}$ / $< 20\text{ µs}$)** |
-| **Explicabilidad** | Opaca (Caja negra) | ID de regla genérico | **Formal ($\LaTeX$ y Cadenas Causales)** |
-| **Costo por Inferencia** | Elevado (Tokens / GPUs) | Medio (Consumo de CPU por ReDoS) | **Cero ($0.00$ marginal en CPU local)** |
-| **Monetización** | Cobro por token de LLM | Venta de suscripción estática | **Suscripción Base + Silicon Units (SU)** |
+| **Label Provenance** | Subjective (Manual human annotators) | Manual (Static signatures written by analysts) | **Axiomatic (Theorems on formal grammars)** |
+| **Decision Nature** | Probabilistic (Score between $0.0 - 1.0$) | Syntactic string match | **Deterministic SAT ($\text{TRUE} \lor \text{FALSE}$)** |
+| **Camouflage Resistance** | Vulnerable to adversarial perturbations | Vulnerable to encoding evasions | **Absolute (Prime Implicant Generalization)** |
+| **Evaluation Latency** | Unacceptable ($350 - 650\text{ ms}$) | Slow and variable ($2 - 10\text{ ms}$) | **Ultra-Fast ($< 0.05\text{ ms}$ / $< 20\text{ µs}$)** |
+| **Explainability** | Opaque (Black-box weight activations) | Generic rule ID | **Formal ($\LaTeX$ Proofs & Causal Graphs)** |
+| **Marginal Cost per Query** | High (GPU compute / Token metering) | Medium (CPU overhead due to ReDoS) | **Zero ($0.00$ marginal cost on local CPU)** |
+| **Monetization Structure** | Metered per inference token | Static subscription fees | **Base Platform + Silicon Units (SU)** |
 
 ---
 
-### Referencias y Documentación Relacionada
-- [Metodología de Ciberdefensa Determinista SAT](file:///d:/proyectos/rush/exactor-waf-guardian/EXACTOR_METHODOLOGY.md)
-- [Prueba de Concepto y Duelo Multi-Agente](file:///d:/proyectos/rush/exactor-waf-guardian/PROOF_OF_CONCEPT.md)
-- [Reglas Oficiales de Licenciamiento y Planes de Silicon Units](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md)
-- [README Principal de Exactor WAF Guardian](file:///d:/proyectos/rush/exactor-waf-guardian/README.md)
+### Related Documentation & Technical References
+- [Deterministic SAT Cyber-Defense Methodology](file:///d:/proyectos/rush/exactor-waf-guardian/EXACTOR_METHODOLOGY.md)
+- [Proof of Concept & Multi-Agent Duel Benchmark](file:///d:/proyectos/rush/exactor-waf-guardian/PROOF_OF_CONCEPT.md)
+- [Silicon Unit Pricing & Licensing Rules](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md)
+- [Exactor WAF Guardian Master README](file:///d:/proyectos/rush/exactor-waf-guardian/README.md)

@@ -60,6 +60,15 @@ pub struct WafConfig {
 
     /// Optional Envoy ext_authz Unix Domain Socket path (e.g. /var/run/waf.sock).
     pub envoy_ext_authz_socket: Option<String>,
+
+    /// Optional T1K protocol listen address for SafeLine integration (e.g. 0.0.0.0:8000).
+    pub t1k_listen_addr: Option<String>,
+
+    /// Optional downstream SafeLine detector address (e.g. safeline-detector:8000).
+    pub t1k_downstream_addr: Option<String>,
+
+    /// Optional SafeLine PostgreSQL database URL for shared live reporting & dashboards.
+    pub safeline_pg_url: Option<String>,
 }
 
 fn default_mode() -> String {
@@ -121,6 +130,9 @@ impl Default for WafConfig {
             redis_url: None,
             envoy_ext_authz_addr: None,
             envoy_ext_authz_socket: None,
+            t1k_listen_addr: None,
+            t1k_downstream_addr: None,
+            safeline_pg_url: None,
         }
     }
 }
@@ -176,6 +188,15 @@ impl WafConfig {
         }
         if let Ok(v) = std::env::var("ENVOY_EXT_AUTHZ_ADDR") {
             cfg.envoy_ext_authz_addr = Some(v);
+        }
+        if let Ok(v) = std::env::var("T1K_LISTEN_ADDR") {
+            cfg.t1k_listen_addr = Some(v);
+        }
+        if let Ok(v) = std::env::var("T1K_DOWNSTREAM_ADDR") {
+            cfg.t1k_downstream_addr = Some(v);
+        }
+        if let Ok(v) = std::env::var("SAFELINE_PG_URL") {
+            cfg.safeline_pg_url = Some(v);
         }
 
         cfg
