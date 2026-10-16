@@ -184,7 +184,7 @@ async fn handle_envoy_authz_check(
             "formal_proof_latex": proof.formal_proof_latex,
             "active_tokens": proof.active_tokens,
             "latency_us": eval_us,
-            "engine": "Exactor SAT Solver (Rust Bare-Metal)"
+            "engine": "Envoy SAT Security Module (Powered by EXACTOR Core)"
         });
 
         let mut res = (StatusCode::FORBIDDEN, error_body.to_string()).into_response();
@@ -193,6 +193,27 @@ async fn handle_envoy_authz_check(
             "content-type",
             HeaderValue::from_static("application/json; charset=utf-8"),
         );
+        // Envoy-native headers
+        headers.insert("x-envoy-waf-blocked", HeaderValue::from_static("true"));
+        headers.insert(
+            "x-envoy-waf-category",
+            HeaderValue::from_str(proof.category.as_str()).unwrap_or(HeaderValue::from_static("unknown")),
+        );
+        headers.insert(
+            "x-envoy-waf-rule",
+            HeaderValue::from_str(rule_id).unwrap_or(HeaderValue::from_static("sat")),
+        );
+        headers.insert(
+            "x-envoy-waf-event-id",
+            HeaderValue::from_str(&payload.id).unwrap_or(HeaderValue::from_static("event")),
+        );
+        headers.insert(
+            "x-envoy-waf-latency-us",
+            HeaderValue::from_str(&format!("{:.1}", eval_us))
+                .unwrap_or(HeaderValue::from_static("0.0")),
+        );
+
+        // Exactor provider headers (aliased for multi-ecosystem interoperability)
         headers.insert("x-exactor-blocked", HeaderValue::from_static("true"));
         headers.insert(
             "x-exactor-category",
@@ -206,6 +227,11 @@ async fn handle_envoy_authz_check(
             "x-exactor-event-id",
             HeaderValue::from_str(&payload.id).unwrap_or(HeaderValue::from_static("event")),
         );
+        headers.insert(
+            "x-exactor-latency-us",
+            HeaderValue::from_str(&format!("{:.1}", eval_us))
+                .unwrap_or(HeaderValue::from_static("0.0")),
+        );
         res
     } else {
         state.allowed_checks.fetch_add(1, Ordering::Relaxed);
@@ -216,7 +242,13 @@ async fn handle_envoy_authz_check(
 
         let mut res = (StatusCode::OK, "").into_response();
         let headers = res.headers_mut();
+        headers.insert("x-envoy-waf-verified", HeaderValue::from_static("true"));
         headers.insert("x-exactor-verified", HeaderValue::from_static("true"));
+        headers.insert(
+            "x-envoy-waf-latency-us",
+            HeaderValue::from_str(&format!("{:.1}", eval_us))
+                .unwrap_or(HeaderValue::from_static("0.0")),
+        );
         headers.insert(
             "x-exactor-latency-us",
             HeaderValue::from_str(&format!("{:.1}", eval_us))

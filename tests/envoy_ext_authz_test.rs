@@ -42,9 +42,14 @@ async fn test_envoy_ext_authz_benign_request_allowed() {
 
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(
+        response.headers().get("x-envoy-waf-verified").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-verified").unwrap(),
         "true"
     );
+    assert!(response.headers().contains_key("x-envoy-waf-latency-us"));
     assert!(response.headers().contains_key("x-exactor-latency-us"));
 }
 
@@ -66,8 +71,16 @@ async fn test_envoy_ext_authz_sqli_blocked_with_proof() {
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
     assert_eq!(
+        response.headers().get("x-envoy-waf-blocked").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-blocked").unwrap(),
         "true"
+    );
+    assert_eq!(
+        response.headers().get("x-envoy-waf-category").unwrap(),
+        "sql_injection"
     );
     assert_eq!(
         response.headers().get("x-exactor-category").unwrap(),
@@ -96,8 +109,16 @@ async fn test_envoy_ext_authz_post_body_xss_blocked() {
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
     assert_eq!(
+        response.headers().get("x-envoy-waf-blocked").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-blocked").unwrap(),
         "true"
+    );
+    assert_eq!(
+        response.headers().get("x-envoy-waf-category").unwrap(),
+        "xss"
     );
     assert_eq!(
         response.headers().get("x-exactor-category").unwrap(),
