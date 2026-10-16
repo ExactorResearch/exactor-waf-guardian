@@ -322,6 +322,8 @@ Compares Accuracy, False Negatives, False Positives, Latency, and Cost across al
 | **Behavioral Defense** | Rudimentary iptables | Slow batch heuristics | **Sliding Window Ring Counters** |
 | **Autonomous Evolution** | Slow manual CRS releases | Costly model fine-tuning | **Real-Time Boolean Minimization** |
 
+> 📖 **Para una comparativa técnica en profundidad:** Consulte el informe [COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md](COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md) con el desglose de los cuatro problemas estructurales de la era anterior (RegEx y Cloud AI) y las pruebas empíricas de benchmarking.
+
 ---
 
 ## 🛠️ Zero-Dependency Installation (Instalación Sin Dependencias)
