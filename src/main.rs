@@ -7,7 +7,9 @@ use exactor_waf_guardian::config::WafConfig;
 use exactor_waf_guardian::engine::ExactorSatEngine;
 use exactor_waf_guardian::ledger::SqliteLedger;
 use exactor_waf_guardian::proxy::{proxy_handler, ProxyState};
+use exactor_waf_guardian::reporter::SafeLinePgReporter;
 use exactor_waf_guardian::stateful::StatefulRateLimiter;
+use exactor_waf_guardian::t1k::{run_t1k_server, T1kServerState};
 use exactor_waf_guardian::types::HttpRequestPayload;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -15,7 +17,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{interval, Duration};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser, Debug)]
@@ -83,6 +85,21 @@ enum Commands {
         #[arg(short, long, default_value_t = 10000)]
         requests: usize,
     },
+
+    /// Run as a dedicated SafeLine T1K protocol acceleration co-processor
+    T1kServer {
+        /// T1K listen address (e.g. 0.0.0.0:8000)
+        #[arg(short, long)]
+        listen: Option<String>,
+
+        /// Optional downstream SafeLine detector address to forward benign traffic
+        #[arg(short, long)]
+        downstream: Option<String>,
+
+        /// SafeLine PostgreSQL connection URL for live reporting & metrics
+        #[arg(long)]
+        safeline_pg: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -112,6 +129,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
         Some(Commands::SyncSimplify { limit }) => {
             run_sync_simplify(&config, limit).await
+        }
+        Some(Commands::T1kServer {
+            listen,
+            downstream,
+            safeline_pg,
+        }) => {
+            if let Some(l) = listen {
+                config.t1k_listen_addr = Some(l);
+            }
+            if let Some(d) = downstream {
+                config.t1k_downstream_addr = Some(d);
+            }
+            if let Some(p) = safeline_pg {
+                config.safeline_pg_url = Some(p);
+            }
+            run_t1k_standalone(config).await
         }
         Some(Commands::Proxy {
             listen,
@@ -232,6 +265,36 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         });
     }
 
+    // Optional concurrent SafeLine T1K server listener
+    if let Some(ref t1k_addr) = config.t1k_listen_addr {
+        let safeline_reporter = if let Some(ref pg_url) = config.safeline_pg_url {
+            match SafeLinePgReporter::connect(pg_url).await {
+                Ok(rep) => Some(Arc::new(rep)),
+                Err(e) => {
+                    warn!(target: "exactor::server", "Could not connect to SafeLine PostgreSQL at {}: {}", pg_url, e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        let t1k_state = Arc::new(T1kServerState::new(
+            engine.clone(),
+            Some(Arc::new(ledger.clone())),
+            safeline_reporter,
+            Some(stateful_limiter.clone()),
+            config.t1k_downstream_addr.clone(),
+            config.mode.clone(),
+        ));
+        let addr_clone = t1k_addr.clone();
+        tokio::spawn(async move {
+            if let Err(e) = run_t1k_server(&addr_clone, t1k_state).await {
+                error!(target: "exactor::t1k", "T1K server background error: {}", e);
+            }
+        });
+    }
+
     // Combine Management API and Proxy Router
     let app = axum::Router::new()
         .merge(create_api_router())
@@ -249,6 +312,67 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
     .await?;
 
     Ok(())
+}
+
+/// Runs the standalone T1K Acceleration Co-Processor daemon for SafeLine.
+async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!(
+        r#"
+  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
+  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
+  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
+  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
+  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
+  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
+         T1K ACCELERATION CO-PROCESSOR FOR SAFELINE WAF
+      Powered by EXACTOR Core & https://exactor.tech
+    "#
+    );
+
+    let t1k_addr = config
+        .t1k_listen_addr
+        .clone()
+        .unwrap_or_else(|| "0.0.0.0:8000".to_string());
+
+    info!(target: "exactor::t1k", "Starting Exactor T1K Acceleration Co-Processor v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::t1k", "T1K Listen Address : {}", t1k_addr);
+    info!(target: "exactor::t1k", "Defense Mode       : {}", config.mode.to_uppercase());
+    if let Some(ref ds) = config.t1k_downstream_addr {
+        info!(target: "exactor::t1k", "Downstream snserver: {}", ds);
+    }
+    if let Some(ref pg) = config.safeline_pg_url {
+        info!(target: "exactor::t1k", "SafeLine PostgreSQL: {}", pg);
+    }
+
+    let engine = Arc::new(ExactorSatEngine::new());
+    let ledger = SqliteLedger::init(&config.database_path).await?;
+    let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
+
+    let safeline_reporter = if let Some(ref pg_url) = config.safeline_pg_url {
+        match SafeLinePgReporter::connect(pg_url).await {
+            Ok(rep) => {
+                info!(target: "exactor::t1k", "SafeLine PostgreSQL reporting enabled at {}", pg_url);
+                Some(Arc::new(rep))
+            }
+            Err(e) => {
+                warn!(target: "exactor::t1k", "Failed to connect to SafeLine PostgreSQL at {}: {}. Continuing without PG sync.", pg_url, e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    let t1k_state = Arc::new(T1kServerState::new(
+        engine,
+        Some(Arc::new(ledger)),
+        safeline_reporter,
+        Some(stateful_limiter),
+        config.t1k_downstream_addr,
+        config.mode,
+    ));
+
+    run_t1k_server(&t1k_addr, t1k_state).await
 }
 
 /// Standalone CLI single-payload inspector.

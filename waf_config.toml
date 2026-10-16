@@ -52,3 +52,16 @@ stateful_ban_secs = 180
 # Optional Redis connection URL for distributed cluster state synchronization (leave empty for built-in high-speed in-memory ring buffer)
 # redis_url = "redis://127.0.0.1:6379"
 
+# ==============================================================================
+# SAFELINE WAF T1K CO-PROCESSOR INTEGRATION (Tier 0 Acceleration & Shared Reporting)
+# ==============================================================================
+# Inbound T1K binary protocol listener (e.g. 0.0.0.0:8000 or unix socket)
+# t1k_listen_addr = "0.0.0.0:8000"
+
+# Target downstream SafeLine detector (snserver) for deep semantic analysis of benign traffic
+# t1k_downstream_addr = "172.22.0.5:8000"
+
+# SafeLine PostgreSQL instance URL to stream live incident proofs directly into SafeLine Console
+# safeline_pg_url = "postgres://safeline-ce:safeline-ce@safeline-pg:5432/safeline-ce?sslmode=disable"
+
+

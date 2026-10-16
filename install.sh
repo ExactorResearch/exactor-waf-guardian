@@ -68,6 +68,8 @@ else
     esac
 
     DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/releases/download/${RELEASE_TAG}/exactor-waf-guardian-${TARGET_ARCH}"
+    echo $DOWNLOAD_URL
+    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/blob/main/releases/download/v0.1.0/exactor-waf-guardian-x86_64-unknown-linux-musl"
     TEMP_BIN="/tmp/exactor-waf-guardian"
     echo -e "Downloading pre-compiled standalone binary (${TARGET_ARCH})..."
     
