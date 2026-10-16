@@ -90,6 +90,10 @@ enum Commands {
         /// Inbound listen address for Envoy ext_authz (e.g. 0.0.0.0:9002)
         #[arg(short, long)]
         listen: Option<String>,
+
+        /// Inbound Unix Domain Socket path for Envoy ext_authz (e.g. /var/run/waf.sock)
+        #[arg(long)]
+        socket: Option<String>,
     },
 }
 
@@ -137,9 +141,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
             run_server(config).await
         }
-        Some(Commands::EnvoyAuthz { listen }) => {
+        Some(Commands::EnvoyAuthz { listen, socket }) => {
             if let Some(l) = listen {
                 config.envoy_ext_authz_addr = Some(l);
+            }
+            if let Some(s) = socket {
+                config.envoy_ext_authz_socket = Some(s);
             }
             run_envoy_authz_standalone(config).await
         }
@@ -407,6 +414,19 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
     );
 
     let app = create_envoy_authz_router(envoy_state);
+
+    if let Some(socket_path) = config.envoy_ext_authz_socket {
+        #[cfg(unix)]
+        {
+            info!(target: "exactor::envoy", "Envoy ext_authz starting in Unix Domain Socket mode: {}", socket_path);
+            return exactor_waf_guardian::envoy::serve_uds(app, &socket_path).await;
+        }
+        #[cfg(not(unix))]
+        {
+            warn!(target: "exactor::envoy", "Unix Domain Sockets (UDS) are only supported natively on Unix/Linux systems. Falling back to TCP address: {}", listen_addr);
+        }
+    }
+
     let addr: SocketAddr = listen_addr.parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!(target: "exactor::envoy", "Exactor Envoy ext_authz listening on http://{}", addr);

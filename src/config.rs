@@ -57,6 +57,9 @@ pub struct WafConfig {
 
     /// Optional Envoy ext_authz HTTP listener address (e.g. 0.0.0.0:9002).
     pub envoy_ext_authz_addr: Option<String>,
+
+    /// Optional Envoy ext_authz Unix Domain Socket path (e.g. /var/run/waf.sock).
+    pub envoy_ext_authz_socket: Option<String>,
 }
 
 fn default_mode() -> String {
@@ -117,6 +120,7 @@ impl Default for WafConfig {
             stateful_ban_secs: default_ban_secs(),
             redis_url: None,
             envoy_ext_authz_addr: None,
+            envoy_ext_authz_socket: None,
         }
     }
 }

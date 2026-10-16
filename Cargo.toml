@@ -14,6 +14,7 @@ tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5.2", features = ["cors", "trace", "timeout"] }
 http-body-util = "0.1"
 hyper = { version = "1.4", features = ["full"] }
+hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
 
 # HTTP Client for Upstream Proxying & Exactor Cloud API
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }

@@ -89,59 +89,35 @@ impl SqliteLedger {
         let (tx, mut rx) = unbounded_channel::<AuditRecord>();
         let pool_bg = pool.clone();
 
-        // Background worker for non-blocking WAL ledger ingestion
+        // Background worker for non-blocking WAL ledger ingestion with micro-batching
         tokio::spawn(async move {
-            while let Some(rec) = rx.recv().await {
-                let matched_rules_str = rec
-                    .proof
-                    .matched_rules
-                    .iter()
-                    .map(|r| r.rule_id.as_str())
-                    .collect::<Vec<_>>()
-                    .join(",");
-                let active_tokens_str = rec.proof.active_tokens.join(",");
-                let is_viol = if rec.proof.is_violation { 1 } else { 0 };
+            let mut batch: Vec<AuditRecord> = Vec::with_capacity(64);
+            let mut interval = tokio::time::interval(std::time::Duration::from_millis(50));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-                let _ = sqlx::query(
-                    r#"
-                    INSERT INTO audit_log 
-                    (request_id, client_ip, method, path, query_string, action, category, execution_path, latency_us, matched_rules, active_tokens, causal_proof, is_violation)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    "#
-                )
-                .bind(&rec.request_id)
-                .bind(&rec.client_ip)
-                .bind(&rec.method)
-                .bind(&rec.path)
-                .bind(&rec.query_string)
-                .bind(format!("{:?}", rec.proof.action))
-                .bind(rec.proof.category.as_str())
-                .bind(format!("{:?}", rec.proof.execution_path))
-                .bind(rec.proof.execution_time_us)
-                .bind(&matched_rules_str)
-                .bind(&active_tokens_str)
-                .bind(&rec.proof.causal_proof)
-                .bind(is_viol)
-                .execute(&pool_bg)
-                .await;
-
-                // Log novel anomaly if violation
-                if rec.proof.is_violation {
-                    let minterm_str = rec.minterm.to_string();
-                    let bits_str = format!("{:#034x}", rec.minterm);
-                    let _ = sqlx::query(
-                        r#"
-                        INSERT INTO novel_anomalies (minterm_u128, feature_bits, occurrence_count, last_seen)
-                        VALUES (?, ?, 1, CURRENT_TIMESTAMP)
-                        ON CONFLICT(minterm_u128) DO UPDATE SET 
-                            occurrence_count = occurrence_count + 1,
-                            last_seen = CURRENT_TIMESTAMP
-                        "#
-                    )
-                    .bind(&minterm_str)
-                    .bind(&bits_str)
-                    .execute(&pool_bg)
-                    .await;
+            loop {
+                tokio::select! {
+                    maybe_rec = rx.recv() => {
+                        match maybe_rec {
+                            Some(rec) => {
+                                batch.push(rec);
+                                if batch.len() >= 64 {
+                                    Self::flush_batch(&pool_bg, &mut batch).await;
+                                }
+                            }
+                            None => {
+                                if !batch.is_empty() {
+                                    Self::flush_batch(&pool_bg, &mut batch).await;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    _ = interval.tick() => {
+                        if !batch.is_empty() {
+                            Self::flush_batch(&pool_bg, &mut batch).await;
+                        }
+                    }
                 }
             }
         });
@@ -152,6 +128,78 @@ impl SqliteLedger {
             pool,
             sender: Arc::new(tx),
         })
+    }
+
+    async fn flush_batch(pool: &Pool<Sqlite>, batch: &mut Vec<AuditRecord>) {
+        if batch.is_empty() {
+            return;
+        }
+
+        let mut tx = match pool.begin().await {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!(target: "exactor::ledger", "Failed to begin batch audit transaction: {}", e);
+                batch.clear();
+                return;
+            }
+        };
+
+        for rec in batch.drain(..) {
+            let matched_rules_str = rec
+                .proof
+                .matched_rules
+                .iter()
+                .map(|r| r.rule_id.as_str())
+                .collect::<Vec<_>>()
+                .join(",");
+            let active_tokens_str = rec.proof.active_tokens.join(",");
+            let is_viol = if rec.proof.is_violation { 1 } else { 0 };
+
+            let _ = sqlx::query(
+                r#"
+                INSERT INTO audit_log 
+                (request_id, client_ip, method, path, query_string, action, category, execution_path, latency_us, matched_rules, active_tokens, causal_proof, is_violation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                "#
+            )
+            .bind(&rec.request_id)
+            .bind(&rec.client_ip)
+            .bind(&rec.method)
+            .bind(&rec.path)
+            .bind(&rec.query_string)
+            .bind(format!("{:?}", rec.proof.action))
+            .bind(rec.proof.category.as_str())
+            .bind(format!("{:?}", rec.proof.execution_path))
+            .bind(rec.proof.execution_time_us)
+            .bind(&matched_rules_str)
+            .bind(&active_tokens_str)
+            .bind(&rec.proof.causal_proof)
+            .bind(is_viol)
+            .execute(&mut *tx)
+            .await;
+
+            if rec.proof.is_violation {
+                let minterm_str = rec.minterm.to_string();
+                let bits_str = format!("{:#034x}", rec.minterm);
+                let _ = sqlx::query(
+                    r#"
+                    INSERT INTO novel_anomalies (minterm_u128, feature_bits, occurrence_count, last_seen)
+                    VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT(minterm_u128) DO UPDATE SET 
+                        occurrence_count = occurrence_count + 1,
+                        last_seen = CURRENT_TIMESTAMP
+                    "#
+                )
+                .bind(&minterm_str)
+                .bind(&bits_str)
+                .execute(&mut *tx)
+                .await;
+            }
+        }
+
+        if let Err(e) = tx.commit().await {
+            tracing::error!(target: "exactor::ledger", "Failed to commit batch audit transaction: {}", e);
+        }
     }
 
     /// Non-blocking ledger record logging (0 µs overhead to the HTTP request pipeline).
