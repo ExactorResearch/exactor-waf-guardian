@@ -12,7 +12,7 @@ param(
     [switch]$AsService = $true,
     [switch]$StartService = $true,
     [switch]$BuildFromSource = $false,
-    [string]$ReleaseVersion = "v0.1.0"
+    [string]$ReleaseVersion = "v0.2.0"
 )
 
 $ErrorActionPreference = "Stop"

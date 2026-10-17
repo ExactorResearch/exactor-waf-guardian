@@ -31,7 +31,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 1. Locate Bundled Binary or Download Standalone Release
 echo -e "${YELLOW}[1/5] Preparing binary (Zero-Dependency Mode)...${NC}"
 BINARY_PATH=""
-RELEASE_TAG="v0.1.0"
+RELEASE_TAG="v0.2.0"
 BUILD_SOURCE=false
 
 for arg in "$@"; do
@@ -69,7 +69,7 @@ else
 
     DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/releases/download/${RELEASE_TAG}/exactor-waf-guardian-${TARGET_ARCH}"
     echo $DOWNLOAD_URL
-    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/blob/main/releases/download/v0.1.0/exactor-waf-guardian-x86_64-unknown-linux-musl"
+    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/blob/main/releases/download/v0.2.0/exactor-waf-guardian-x86_64-unknown-linux-musl"
     TEMP_BIN="/tmp/exactor-waf-guardian"
     echo -e "Downloading pre-compiled standalone binary (${TARGET_ARCH})..."
     

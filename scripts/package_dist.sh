@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VERSION="v0.1.0"
+VERSION="v0.2.0"
 NO_REBUILD=false
 
 for arg in "$@"; do

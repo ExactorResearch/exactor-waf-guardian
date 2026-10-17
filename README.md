@@ -366,8 +366,8 @@ irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/maste
 For air-gapped servers, restricted network perimeters, or environments where piped script execution is restricted:
 
 1. **Download the precompiled bundle:**
-   - **Windows:** `exactor-waf-guardian-v0.1.0-windows-x86_64.zip`
-   - **Linux:** `exactor-waf-guardian-v0.1.0-linux-x86_64.tar.gz`
+   - **Windows:** `exactor-waf-guardian-v0.2.0-windows-x86_64.zip`
+   - **Linux:** `exactor-waf-guardian-v0.2.0-linux-x86_64.tar.gz`
 2. **Extract and install with a single command:**
    - On Windows:
      ```powershell

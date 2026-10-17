@@ -504,7 +504,7 @@ class ExactorRulesApp:
             safe_addstr(stdscr, 0, 0, "Terminal demasiado pequeño para EXACTOR-RULES.", curses.color_pair(2))
             return
 
-        title = " EXACTOR-RULES v0.1.0 — Deterministic SAT Cyber-Defense Control Plane "
+        title = " EXACTOR-RULES v0.2.0 — Deterministic SAT Cyber-Defense Control Plane "
         safe_addstr(stdscr, 0, 0, title.ljust(max_x), curses.color_pair(7) | curses.A_BOLD)
 
         status_color = curses.color_pair(1) if self.is_connected else curses.color_pair(2)
@@ -856,7 +856,7 @@ class ExactorRulesApp:
     # =========================================================================
     def run_cli_fallback(self):
         print("\033[1;36m" + "=" * 78 + "\033[0m")
-        print("\033[1;37m EXACTOR-RULES v0.1.0 — Consola de Control de Reglas WAF\033[0m")
+        print("\033[1;37m EXACTOR-RULES v0.2.0 — Consola de Control de Reglas WAF\033[0m")
         print("\033[1;36m" + "=" * 78 + "\033[0m")
         self.sync_data()
         print(f"Estado WAF  : \033[1;32m{self.connection_msg}\033[0m" if self.is_connected else f"Estado WAF  : \033[1;31m{self.connection_msg}\033[0m")
