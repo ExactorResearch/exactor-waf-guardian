@@ -428,6 +428,14 @@ fn test_wordpress_shield_toggle() {
     assert!(proof_blocked.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
     assert!(proof_blocked.active_islands.contains(&"ISLAND-WORDPRESS".to_string()));
 
+    // Verify /index.php is also blocked under WordPress/PHP shield
+    let index_php_probe = HttpRequestPayload::new("GET", "/index.php", "", "");
+    let proof_index = engine_shield_on.evaluate_payload(&index_php_probe);
+    assert!(proof_index.is_violation);
+    assert_eq!(proof_index.action, AttackDecision::Block);
+    assert_eq!(proof_index.category, AttackCategory::CmsWordpressProbe);
+    assert!(proof_index.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
+
     // 2. When WordPress shield is DISABLED (for legitimate WordPress installations)
     let islands_off = IslandsConfig {
         wordpress_shield: false,
@@ -440,6 +448,10 @@ fn test_wordpress_shield_toggle() {
     assert!(!proof_allowed.is_violation);
     assert_eq!(proof_allowed.action, AttackDecision::Allow);
     assert_eq!(proof_allowed.category, AttackCategory::Benign);
+
+    let proof_index_allowed = engine_shield_off.evaluate_payload(&index_php_probe);
+    assert!(!proof_index_allowed.is_violation);
+    assert_eq!(proof_index_allowed.action, AttackDecision::Allow);
 }
 
 #[test]

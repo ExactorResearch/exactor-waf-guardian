@@ -917,7 +917,7 @@ impl ExactorSatEngine {
         let islands_cfg = self.islands_config.read().unwrap().clone();
         let full_inspectable = req.full_inspectable_string();
         if islands_cfg.wordpress_shield && tokens.has_wordpress_probe {
-            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") {
+            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") || full_inspectable.contains("index.php") {
                 if let Some(r) = self.rules.get("SAT-WP-01") {
                     matched_rules.push(r.clone());
                     active_islands.push("ISLAND-WORDPRESS".to_string());
