@@ -485,11 +485,47 @@ def main():
     parser.add_argument("--api", default=DEFAULT_API_URL, help=f"URL del WAF API (por defecto: {DEFAULT_API_URL})")
     parser.add_argument("--auto-approve", action="store_true", help="Aprobar automáticamente todas las sugerencias (modo batch)")
     parser.add_argument("--dry-run", action="store_true", help="Solo analizar y listar sugerencias sin consultar aprobación")
+    parser.add_argument("--json", action="store_true", help="Exportar sugerencias y estadísticas en formato JSON")
     args = parser.parse_args()
 
     db_path = find_file([args.db] if args.db else DEFAULT_DB_PATHS)
     config_path = find_file([args.config] if args.config else DEFAULT_CONFIG_PATHS)
     api_client = WafApiClient(args.api)
+
+    # 1. Agente 1: Analizar Trazas
+    pattern_agent = TrafficPatternAgent(db_path)
+    patterns = pattern_agent.analyze()
+    if "error" in patterns:
+        if args.json:
+            print(json.dumps({"error": patterns["error"]}))
+        else:
+            print(f"\033[1;31mError: {patterns['error']}\033[0m")
+        sys.exit(1)
+
+    # 2. Agente 2: Sintetizar Reglas
+    current_rules = api_client.get_customer_rules()
+    current_islands = api_client.get_islands_config()
+    synthesizer = RuleSynthesizerAgent(patterns, current_rules, current_islands)
+    suggestions = synthesizer.synthesize()
+
+    if args.json:
+        # Convert defaultdict and Counter to normal dicts
+        serializable_patterns = {
+            "total_records": patterns["total_records"],
+            "blocked_count": patterns["blocked_count"],
+            "allowed_count": patterns["allowed_count"],
+            "malicious_ips": patterns["malicious_ips"],
+            "probe_clusters": patterns["probe_clusters"],
+            "category_distribution": dict(patterns["category_distribution"]),
+        }
+        output_payload = {
+            "database": db_path,
+            "patterns": serializable_patterns,
+            "suggestions_count": len(suggestions),
+            "suggestions": suggestions,
+        }
+        print(json.dumps(output_payload, indent=2, ensure_ascii=False))
+        return
 
     print("\033[1;36m" + "=" * 78 + "\033[0m")
     print("\033[1;37m EXACTOR-ADVISOR — Pipeline Multi-Agente de Seguridad Autónomo\033[0m")
@@ -503,24 +539,12 @@ def main():
     else:
         print(f"Estado WAF Daemon     : \033[1;33mOFFLINE — Los cambios aprobados se aplicarán sobre {config_path}\033[0m")
 
-    # 1. Agente 1: Analizar Trazas
     print("\n\033[1;34m[1/3] Ejecutando TrafficPatternAgent...\033[0m")
-    pattern_agent = TrafficPatternAgent(db_path)
-    patterns = pattern_agent.analyze()
-    if "error" in patterns:
-        print(f"\033[1;31mError: {patterns['error']}\033[0m")
-        sys.exit(1)
-
     print(f"  • Registros procesados : {patterns['total_records']} ({patterns['blocked_count']} bloqueados, {patterns['allowed_count']} permitidos)")
     print(f"  • IPs maliciosas top   : {len(patterns['malicious_ips'])} detectadas con >90% tasa de hostilidad")
     print(f"  • Categorías detectadas: {dict(patterns['category_distribution'])}")
 
-    # 2. Agente 2: Sintetizar Reglas
     print("\n\033[1;34m[2/3] Ejecutando RuleSynthesizerAgent...\033[0m")
-    current_rules = api_client.get_customer_rules()
-    current_islands = api_client.get_islands_config()
-    synthesizer = RuleSynthesizerAgent(patterns, current_rules, current_islands)
-    suggestions = synthesizer.synthesize()
     print(f"  • Reglas formuladas    : {len(suggestions)} sugerencia(s) generada(s) con 0 Falsos Positivos comprobados")
 
     # 3. Agente 3: Consultar al Administrador y Aplicar
