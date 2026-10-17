@@ -20,6 +20,10 @@ import argparse
 import urllib.request
 import urllib.error
 from collections import defaultdict, Counter
+try:
+    import tomllib
+except ImportError:
+    tomllib = None
 
 # Ensure UTF-8 output encoding
 if hasattr(sys.stdout, "reconfigure"):
@@ -505,6 +509,17 @@ def main():
     # 2. Agente 2: Sintetizar Reglas
     current_rules = api_client.get_customer_rules()
     current_islands = api_client.get_islands_config()
+    if (not current_rules or not current_islands) and tomllib and os.path.exists(config_path):
+        try:
+            with open(config_path, "rb") as f:
+                cfg_toml = tomllib.load(f)
+                if not current_rules:
+                    current_rules = cfg_toml.get("business_rules", {}).get("rules", [])
+                if not current_islands:
+                    current_islands = cfg_toml.get("islands", {})
+        except Exception:
+            pass
+
     synthesizer = RuleSynthesizerAgent(patterns, current_rules, current_islands)
     suggestions = synthesizer.synthesize()
 
