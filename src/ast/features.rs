@@ -41,6 +41,11 @@ pub const FEATURE_NAMES: &[&str] = &[
     // Stateful Behavioral
     "v34_stateful_rate_limit",
     "v35_stateful_credential_stuffing",
+    // Modular Protection Islands
+    "v36_wordpress_probe",
+    "v37_sensitive_exposure",
+    "v38_framework_exploit",
+    "v39_business_violation",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -143,6 +148,11 @@ impl FeatureBinarizer {
         // Stateful Behavioral
         if tokens.has_stateful_rate_limit { fv.set(34); }
         if tokens.has_stateful_credential_stuffing { fv.set(35); }
+
+        // Modular Protection Islands
+        if tokens.has_wordpress_probe { fv.set(36); }
+        if tokens.has_sensitive_file_probe { fv.set(37); }
+        if tokens.has_framework_exploit_probe { fv.set(38); }
 
         fv
     }

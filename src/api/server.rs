@@ -1,12 +1,13 @@
 use crate::ast::features::FeatureBinarizer;
 use crate::cloud::SimplifyRequest;
+use crate::config::{CustomBusinessRule, IslandsConfig};
 use crate::proxy::ProxyState;
 use crate::types::{HttpRequestPayload, ProofChain, WafMetricsSnapshot};
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use serde::Deserialize;
@@ -45,6 +46,15 @@ pub fn create_api_router() -> Router<Arc<ProxyState>> {
         .route("/api/waf/metrics", get(get_metrics))
         .route("/api/waf/rules", get(get_rules))
         .route("/api/waf/islands", get(get_islands))
+        .route(
+            "/api/waf/islands/config",
+            get(get_islands_config).post(update_islands_config),
+        )
+        .route(
+            "/api/waf/rules/customer",
+            get(get_customer_rules).post(add_customer_rule),
+        )
+        .route("/api/waf/rules/customer/:id", delete(delete_customer_rule))
         .route("/api/waf/sync-simplify", post(trigger_sync_simplify))
 }
 
@@ -120,6 +130,72 @@ async fn get_islands(State(state): State<Arc<ProxyState>>) -> impl IntoResponse 
         "count": islands.len(),
         "islands": islands
     }))
+}
+
+async fn get_islands_config(State(state): State<Arc<ProxyState>>) -> impl IntoResponse {
+    let cfg = state.engine.islands_config.read().unwrap().clone();
+    Json(serde_json::json!({
+        "status": "ok",
+        "islands": cfg
+    }))
+}
+
+async fn update_islands_config(
+    State(state): State<Arc<ProxyState>>,
+    Json(cfg): Json<IslandsConfig>,
+) -> impl IntoResponse {
+    {
+        let mut cur = state.engine.islands_config.write().unwrap();
+        *cur = cfg.clone();
+    }
+    info!(target: "exactor::api", "Updated islands config: wordpress={}, exposure={}, framework={}",
+        cfg.wordpress_shield, cfg.exposure_shield, cfg.framework_shield);
+    Json(serde_json::json!({
+        "status": "ok",
+        "message": "Protection islands updated successfully",
+        "islands": cfg
+    }))
+}
+
+async fn get_customer_rules(State(state): State<Arc<ProxyState>>) -> impl IntoResponse {
+    let rules = state.engine.get_customer_business_rules();
+    Json(serde_json::json!({
+        "status": "ok",
+        "count": rules.len(),
+        "rules": rules
+    }))
+}
+
+async fn add_customer_rule(
+    State(state): State<Arc<ProxyState>>,
+    Json(rule): Json<CustomBusinessRule>,
+) -> impl IntoResponse {
+    info!(target: "exactor::api", "Adding/updating customer business rule: {} (id: {})", rule.name, rule.id);
+    state.engine.add_customer_business_rule(rule.clone());
+    Json(serde_json::json!({
+        "status": "ok",
+        "message": "Customer business rule added/updated successfully",
+        "rule": rule
+    }))
+}
+
+async fn delete_customer_rule(
+    State(state): State<Arc<ProxyState>>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    let removed = state.engine.remove_customer_business_rule(&id);
+    if removed {
+        info!(target: "exactor::api", "Removed customer business rule id: {}", id);
+        Json(serde_json::json!({
+            "status": "ok",
+            "message": format!("Rule '{}' removed successfully", id)
+        }))
+    } else {
+        Json(serde_json::json!({
+            "status": "not_found",
+            "message": format!("Rule '{}' not found", id)
+        }))
+    }
 }
 
 /// Triggers autonomous Exact Boolean Minimization using https://exactor.tech/api/simplify.

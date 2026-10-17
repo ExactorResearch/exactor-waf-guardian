@@ -212,7 +212,10 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
     info!(target: "exactor::server", "Cloud API URL  : {}", config.exactor_api_url);
     info!(target: "exactor::server", "SQLite Ledger  : {}", config.database_path);
 
-    let engine = Arc::new(ExactorSatEngine::new());
+    let engine = Arc::new(ExactorSatEngine::with_config(
+        config.islands.clone(),
+        config.business_rules.clone(),
+    ));
     let ledger = SqliteLedger::init(&config.database_path).await?;
     let cloud_client = ExactorCloudClient::new(
         config.exactor_api_url.clone(),
@@ -390,7 +393,10 @@ async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error:
         info!(target: "exactor::t1k", "SafeLine PostgreSQL: {}", pg);
     }
 
-    let engine = Arc::new(ExactorSatEngine::new());
+    let engine = Arc::new(ExactorSatEngine::with_config(
+        config.islands.clone(),
+        config.business_rules.clone(),
+    ));
     let ledger = SqliteLedger::init(&config.database_path).await?;
     let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
 
@@ -526,7 +532,10 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
     info!(target: "exactor::envoy", "Cloud API URL           : {}", config.exactor_api_url);
     info!(target: "exactor::envoy", "SQLite Ledger           : {}", config.database_path);
 
-    let engine = Arc::new(ExactorSatEngine::new());
+    let engine = Arc::new(ExactorSatEngine::with_config(
+        config.islands.clone(),
+        config.business_rules.clone(),
+    ));
     let ledger = SqliteLedger::init(&config.database_path).await?;
     let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
 
@@ -539,11 +548,11 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
 
     let app = create_envoy_authz_router(envoy_state);
 
-    if let Some(socket_path) = config.envoy_ext_authz_socket {
+    if let Some(_socket_path) = config.envoy_ext_authz_socket {
         #[cfg(unix)]
         {
-            info!(target: "exactor::envoy", "Envoy ext_authz starting in Unix Domain Socket mode: {}", socket_path);
-            return exactor_waf_guardian::envoy::serve_uds(app, &socket_path).await;
+            info!(target: "exactor::envoy", "Envoy ext_authz starting in Unix Domain Socket mode: {}", _socket_path);
+            return exactor_waf_guardian::envoy::serve_uds(app, &_socket_path).await;
         }
         #[cfg(not(unix))]
         {

@@ -17,6 +17,10 @@ pub enum AttackCategory {
     JwtTampering,
     CredentialStuffing,
     RateLimitDdos,
+    CmsWordpressProbe,
+    SensitiveExposureProbe,
+    FrameworkExploitProbe,
+    BusinessRuleViolation,
     Unknown,
 }
 
@@ -35,6 +39,10 @@ impl AttackCategory {
             AttackCategory::JwtTampering => "jwt_tampering",
             AttackCategory::CredentialStuffing => "credential_stuffing",
             AttackCategory::RateLimitDdos => "rate_limit_ddos",
+            AttackCategory::CmsWordpressProbe => "cms_wordpress_probe",
+            AttackCategory::SensitiveExposureProbe => "sensitive_exposure_probe",
+            AttackCategory::FrameworkExploitProbe => "framework_exploit_probe",
+            AttackCategory::BusinessRuleViolation => "business_rule_violation",
             AttackCategory::Unknown => "unknown",
         }
     }
@@ -53,6 +61,10 @@ impl AttackCategory {
             AttackCategory::JwtTampering => "JWT TAMPERING / ALGORITHM CONFUSION",
             AttackCategory::CredentialStuffing => "CREDENTIAL STUFFING / BRUTE FORCE",
             AttackCategory::RateLimitDdos => "LAYER-7 RATE LIMIT EXCEEDED / DDOS",
+            AttackCategory::CmsWordpressProbe => "WORDPRESS RECONNAISSANCE / CMS PROBE",
+            AttackCategory::SensitiveExposureProbe => "SENSITIVE FILE / BACKDOOR EXPOSURE PROBE",
+            AttackCategory::FrameworkExploitProbe => "FRAMEWORK EXPLOIT PROBE (LOG4J/SPRING/LARAVEL)",
+            AttackCategory::BusinessRuleViolation => "CUSTOMER BUSINESS POLICY VIOLATION",
             AttackCategory::Unknown => "UNKNOWN ANOMALY",
         }
     }

@@ -69,6 +69,79 @@ pub struct WafConfig {
 
     /// Optional SafeLine PostgreSQL database URL for shared live reporting & dashboards.
     pub safeline_pg_url: Option<String>,
+
+    /// Modular protection islands toggles (WordPress shield, exposure shield, framework shield).
+    #[serde(default)]
+    pub islands: IslandsConfig,
+
+    /// Customer declarative business logic and access control rules.
+    #[serde(default)]
+    pub business_rules: BusinessRulesConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IslandsConfig {
+    /// Enable WordPress scanning shield. When enabled, drops all probes
+    /// to /wp-admin, /wp-login.php, xmlrpc.php, /wp-content/, etc.
+    /// If customer legitimately hosts WordPress, set to false.
+    #[serde(default = "default_true")]
+    pub wordpress_shield: bool,
+
+    /// Enable Sensitive Files & Backdoors shield (/.env, /.git, phpMyAdmin, config dumps)
+    #[serde(default = "default_true")]
+    pub exposure_shield: bool,
+
+    /// Enable Framework Exploits shield (Log4j/JNDI, Spring Cloud, ThinkPHP, Laravel Ignition)
+    #[serde(default = "default_true")]
+    pub framework_shield: bool,
+}
+
+impl Default for IslandsConfig {
+    fn default() -> Self {
+        Self {
+            wordpress_shield: true,
+            exposure_shield: true,
+            framework_shield: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomBusinessRule {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub path_prefix: Option<String>,
+    #[serde(default)]
+    pub allowed_methods: Option<Vec<String>>,
+    #[serde(default)]
+    pub blocked_methods: Option<Vec<String>>,
+    #[serde(default)]
+    pub allowed_ips: Option<Vec<String>>,
+    #[serde(default)]
+    pub blocked_ips: Option<Vec<String>>,
+    #[serde(default)]
+    pub required_headers: Option<Vec<String>>,
+    #[serde(default)]
+    pub max_body_bytes: Option<usize>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct BusinessRulesConfig {
+    #[serde(default = "default_false")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub rules: Vec<CustomBusinessRule>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_false() -> bool {
+    false
 }
 
 fn default_mode() -> String {
@@ -133,6 +206,8 @@ impl Default for WafConfig {
             t1k_listen_addr: None,
             t1k_downstream_addr: None,
             safeline_pg_url: None,
+            islands: IslandsConfig::default(),
+            business_rules: BusinessRulesConfig::default(),
         }
     }
 }

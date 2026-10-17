@@ -1,5 +1,6 @@
 use crate::ast::features::{FeatureBinarizer, FeatureVector};
 use crate::ast::lexer::{AstLexer, LexicalTokens};
+use crate::config::{BusinessRulesConfig, CustomBusinessRule, IslandsConfig};
 use crate::stateful::StatefulVerdict;
 use crate::types::{
     AttackCategory, AttackDecision, CertaintyIsland, DeductionRule, ExecutionPath,
@@ -24,6 +25,8 @@ pub struct ExactorSatEngine {
     islands: HashMap<String, CertaintyIsland>,
     rules: HashMap<String, DeductionRule>,
     dynamic_clauses: RwLock<Vec<DynamicCompiledClause>>,
+    pub islands_config: RwLock<IslandsConfig>,
+    pub business_rules_config: RwLock<BusinessRulesConfig>,
 }
 
 impl Default for ExactorSatEngine {
@@ -34,6 +37,10 @@ impl Default for ExactorSatEngine {
 
 impl ExactorSatEngine {
     pub fn new() -> Self {
+        Self::with_config(IslandsConfig::default(), BusinessRulesConfig::default())
+    }
+
+    pub fn with_config(islands_config: IslandsConfig, business_rules_config: BusinessRulesConfig) -> Self {
         let mut islands = HashMap::new();
         islands.insert(
             "ISLAND-SQLI".to_string(),
@@ -142,6 +149,50 @@ impl ExactorSatEngine {
                 category: AttackCategory::RateLimitDdos,
                 description: "Guaranteed invariant domain monitoring temporal event frequencies across sliding atomic ring counters to block L7 bursts, distributed brute-force, and credential stuffing.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Stateful}} \equiv \neg (Token(\text{RATE\_LIMIT\_BURST}) \lor Token(\text{CREDENTIAL\_STUFFING}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-WORDPRESS".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-WORDPRESS".to_string(),
+                name: "WordPress Shield & Reconnaissance Defense Island".to_string(),
+                category: AttackCategory::CmsWordpressProbe,
+                description: "Guaranteed invariant domain protecting non-WordPress web applications against automated scanner probes (/wp-admin, /wp-login, xmlrpc.php, plugins enumeration).".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{WP}} \equiv \neg (Token(\text{WORDPRESS\_PROBE}) \land \text{IslandsConfig.wordpress\_shield})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-EXPOSURE".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-EXPOSURE".to_string(),
+                name: "Sensitive Files & Backdoor Exposure Defense Island".to_string(),
+                category: AttackCategory::SensitiveExposureProbe,
+                description: "Guaranteed invariant domain preventing unauthorized access to sensitive configuration dumps (.env, .git, .aws/credentials, phpMyAdmin, actuator, backup.sql).".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Exp}} \equiv \neg (Token(\text{SENSITIVE\_EXPOSURE}) \land \text{IslandsConfig.exposure\_shield})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-FRAMEWORK".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-FRAMEWORK".to_string(),
+                name: "Framework Remote Code Execution & JNDI Defense Island".to_string(),
+                category: AttackCategory::FrameworkExploitProbe,
+                description: "Guaranteed invariant domain neutralizing known framework vulnerabilities including Log4j JNDI injection, Spring Expression Language, and Laravel Ignition RCE.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Framework}} \equiv \neg (Token(\text{FRAMEWORK\_EXPLOIT}) \land \text{IslandsConfig.framework\_shield})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-BUSINESS-RULES".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                name: "Customer Declarative Business Policies & Access Boundary Island".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                description: "Customer-defined declarative business policies covering method whitelist/blacklist, source IP controls, mandatory security tokens, and payload size thresholds.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Biz}} \equiv \bigwedge_{r \in \text{Rules}} \text{Predicate}_r(Req)".to_string(),
                 confidence: 1.0,
             },
         );
@@ -455,6 +506,134 @@ impl ExactorSatEngine {
             },
         );
 
+        // WordPress Shield Rules
+        rules.insert(
+            "SAT-WP-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-WP-01".to_string(),
+                island_id: "ISLAND-WORDPRESS".to_string(),
+                category: AttackCategory::CmsWordpressProbe,
+                name: "WordPress Administrative & Login Endpoint Reconnaissance".to_string(),
+                description: "Detects unauthorized discovery probes targeting /wp-admin, /wp-login.php, or xmlrpc.php on non-WordPress applications.".to_string(),
+                invariant_formula: r"Token(\text{WORDPRESS\_ADMIN\_OR\_LOGIN}) \land \text{wordpress\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-WP-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-WP-02".to_string(),
+                island_id: "ISLAND-WORDPRESS".to_string(),
+                category: AttackCategory::CmsWordpressProbe,
+                name: "WordPress Component & User Enumeration Probing".to_string(),
+                description: "Detects automated scanning of wp-content/plugins, wp-includes, or wp-json user enumeration.".to_string(),
+                invariant_formula: r"Token(\text{WORDPRESS\_ENUMERATION}) \land \text{wordpress\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // Sensitive File Exposure Rules
+        rules.insert(
+            "SAT-EXP-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-EXP-01".to_string(),
+                island_id: "ISLAND-EXPOSURE".to_string(),
+                category: AttackCategory::SensitiveExposureProbe,
+                name: "Configuration & Secret Credential Disclosure Probe".to_string(),
+                description: "Detects unauthorized discovery probes targeting .env files, .git repositories, or cloud credentials.".to_string(),
+                invariant_formula: r"Token(\text{DOT\_ENV\_OR\_GIT\_SECRET}) \land \text{exposure\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-EXP-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-EXP-02".to_string(),
+                island_id: "ISLAND-EXPOSURE".to_string(),
+                category: AttackCategory::SensitiveExposureProbe,
+                name: "Database & Server Management Console Probing".to_string(),
+                description: "Detects unauthenticated exposure scanning of phpMyAdmin, adminer, or actuator consoles.".to_string(),
+                invariant_formula: r"Token(\text{DATABASE\_MGMT\_CONSOLE}) \land \text{exposure\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // Framework Exploit Rules
+        rules.insert(
+            "SAT-FW-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-FW-01".to_string(),
+                island_id: "ISLAND-FRAMEWORK".to_string(),
+                category: AttackCategory::FrameworkExploitProbe,
+                name: "Log4j JNDI Remote Code Execution Injection".to_string(),
+                description: "Detects ${jndi:ldap/rmi/dns...} remote lookup injection patterns in URI, headers, or body.".to_string(),
+                invariant_formula: r"Token(\text{JNDI\_LOOKUP\_EXPRESSION}) \land \text{framework\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-FW-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-FW-02".to_string(),
+                island_id: "ISLAND-FRAMEWORK".to_string(),
+                category: AttackCategory::FrameworkExploitProbe,
+                name: "Spring/Framework Expression Language Injection".to_string(),
+                description: "Detects SpEL or Laravel ignition evaluation vectors targeting web application backends.".to_string(),
+                invariant_formula: r"Token(\text{FRAMEWORK\_EXPRESSION\_EVAL}) \land \text{framework\_shield}".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // Customer Business Rules
+        rules.insert(
+            "SAT-BIZ-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-BIZ-01".to_string(),
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                name: "Customer Business HTTP Method Restriction Violation".to_string(),
+                description: "Request method violates customer-defined allowed/blocked HTTP verb specification for this route.".to_string(),
+                invariant_formula: r"Expression(\text{Method} \notin \text{AllowedMethods})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-BIZ-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-BIZ-02".to_string(),
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                name: "Customer Business Source IP Access Control Violation".to_string(),
+                description: "Client IP address violates customer-defined IP whitelist or is explicitly blacklisted.".to_string(),
+                invariant_formula: r"Expression(\text{ClientIP} \notin \text{AllowedIPs} \lor \text{ClientIP} \in \text{BlockedIPs})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-BIZ-03".to_string(),
+            DeductionRule {
+                rule_id: "SAT-BIZ-03".to_string(),
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                name: "Customer Business Mandatory Security Header Missing".to_string(),
+                description: "Request lacks customer-defined mandatory authorization or tenant identifier headers.".to_string(),
+                invariant_formula: r"Expression(\text{RequiredHeader} \notin \text{Headers})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-BIZ-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-BIZ-04".to_string(),
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                name: "Customer Business Payload Size Boundary Violation".to_string(),
+                description: "Request payload size exceeds customer-defined maximum byte threshold for this endpoint.".to_string(),
+                invariant_formula: r"Expression(\text{BodySize} > \text{MaxBodyBytes})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
         // Pre-warm AST regex singletons so first evaluation is instant
         let _ = AstLexer::tokenize("");
 
@@ -462,7 +641,36 @@ impl ExactorSatEngine {
             islands,
             rules,
             dynamic_clauses: RwLock::new(Vec::new()),
+            islands_config: RwLock::new(islands_config),
+            business_rules_config: RwLock::new(business_rules_config),
         }
+    }
+
+    /// Dynamically updates protection islands and customer business rules in memory.
+    pub fn update_config(&self, islands: IslandsConfig, biz: BusinessRulesConfig) {
+        *self.islands_config.write().unwrap() = islands;
+        *self.business_rules_config.write().unwrap() = biz;
+    }
+
+    /// Injects or updates a customer declarative business policy in hot memory.
+    pub fn add_customer_business_rule(&self, rule: CustomBusinessRule) {
+        let mut w = self.business_rules_config.write().unwrap();
+        w.enabled = true;
+        w.rules.retain(|r| r.id != rule.id);
+        w.rules.push(rule);
+    }
+
+    /// Removes a customer declarative business policy by ID.
+    pub fn remove_customer_business_rule(&self, rule_id: &str) -> bool {
+        let mut w = self.business_rules_config.write().unwrap();
+        let initial_len = w.rules.len();
+        w.rules.retain(|r| r.id != rule_id);
+        w.rules.len() < initial_len
+    }
+
+    /// Returns all current active customer business policies.
+    pub fn get_customer_business_rules(&self) -> Vec<CustomBusinessRule> {
+        self.business_rules_config.read().unwrap().rules.clone()
     }
 
     /// Hot-compiles a newly simplified rule into the active Fast-Path in-memory table.
@@ -705,7 +913,162 @@ impl ExactorSatEngine {
             }
         }
 
-        // 11. Dynamic hot-compiled rules evaluation
+        // 11. ISLAND-WORDPRESS evaluation
+        let islands_cfg = self.islands_config.read().unwrap().clone();
+        let full_inspectable = req.full_inspectable_string();
+        if islands_cfg.wordpress_shield && tokens.has_wordpress_probe {
+            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") {
+                if let Some(r) = self.rules.get("SAT-WP-01") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-WORDPRESS".to_string());
+                    deduction_steps.push("[ISLAND-WORDPRESS] WordPress administrative or authentication endpoint probe blocked by active shield.".to_string());
+                }
+            } else {
+                if let Some(r) = self.rules.get("SAT-WP-02") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-WORDPRESS".to_string());
+                    deduction_steps.push("[ISLAND-WORDPRESS] WordPress plugin, theme, or user enumeration scan detected.".to_string());
+                }
+            }
+        }
+
+        // 12. ISLAND-EXPOSURE evaluation
+        if islands_cfg.exposure_shield && tokens.has_sensitive_file_probe {
+            if full_inspectable.contains(".env") || full_inspectable.contains(".git") || full_inspectable.contains("id_rsa") || full_inspectable.contains(".aws") {
+                if let Some(r) = self.rules.get("SAT-EXP-01") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-EXPOSURE".to_string());
+                    deduction_steps.push("[ISLAND-EXPOSURE] Probing for environment files (.env), version control (.git), or cloud credentials.".to_string());
+                }
+            } else {
+                if let Some(r) = self.rules.get("SAT-EXP-02") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-EXPOSURE".to_string());
+                    deduction_steps.push("[ISLAND-EXPOSURE] Probing for unauthenticated database administration console (phpMyAdmin, Adminer, Actuator).".to_string());
+                }
+            }
+        }
+
+        // 13. ISLAND-FRAMEWORK evaluation
+        if islands_cfg.framework_shield && tokens.has_framework_exploit_probe {
+            if full_inspectable.contains("jndi:") {
+                if let Some(r) = self.rules.get("SAT-FW-01") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-FRAMEWORK".to_string());
+                    deduction_steps.push("[ISLAND-FRAMEWORK] Remote JNDI code execution injection (Log4j vector) detected.".to_string());
+                }
+            } else {
+                if let Some(r) = self.rules.get("SAT-FW-02") {
+                    matched_rules.push(r.clone());
+                    active_islands.push("ISLAND-FRAMEWORK".to_string());
+                    deduction_steps.push("[ISLAND-FRAMEWORK] Framework expression language / remote execution probe detected.".to_string());
+                }
+            }
+        }
+
+        // 14. ISLAND-BUSINESS-RULES evaluation
+        let biz_cfg = self.business_rules_config.read().unwrap().clone();
+        if biz_cfg.enabled {
+            let client_ip_str = req.client_ip.as_deref().unwrap_or("");
+            for rule in biz_cfg.rules.iter().filter(|r| r.enabled) {
+                // Check path match
+                if let Some(ref prefix) = rule.path_prefix {
+                    if !prefix.is_empty() && !req.path.starts_with(prefix) {
+                        continue;
+                    }
+                }
+                let prefix_str = rule.path_prefix.as_deref().unwrap_or("*");
+
+                // Check blocked methods
+                if let Some(ref blocked) = rule.blocked_methods {
+                    if blocked.iter().any(|m| m.eq_ignore_ascii_case(&req.method)) {
+                        if let Some(r) = self.rules.get("SAT-BIZ-01") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Method '{}' is blocked on route '{}' by rule '{}'", req.method, prefix_str, rule.name);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Method '{}' explicitly prohibited by rule '{}'.", req.method, rule.name));
+                        }
+                        break;
+                    }
+                }
+
+                // Check allowed methods (if specified)
+                if let Some(ref allowed) = rule.allowed_methods {
+                    if !allowed.is_empty() && !allowed.iter().any(|m| m.eq_ignore_ascii_case(&req.method)) {
+                        if let Some(r) = self.rules.get("SAT-BIZ-01") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Method '{}' is not in allowed list {:?} for route '{}'", req.method, allowed, prefix_str);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Method '{}' not allowed by rule '{}'.", req.method, rule.name));
+                        }
+                        break;
+                    }
+                }
+
+                // Check blocked IPs
+                if let Some(ref blocked_ips) = rule.blocked_ips {
+                    if !client_ip_str.is_empty() && blocked_ips.iter().any(|ip| ip == client_ip_str) {
+                        if let Some(r) = self.rules.get("SAT-BIZ-02") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Client IP '{}' is blacklisted by rule '{}'", client_ip_str, rule.name);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Client IP '{}' matched blacklist in rule '{}'.", client_ip_str, rule.name));
+                        }
+                        break;
+                    }
+                }
+
+                // Check allowed IPs (if specified, acts as whitelist)
+                if let Some(ref allowed_ips) = rule.allowed_ips {
+                    if !client_ip_str.is_empty() && !allowed_ips.is_empty() && !allowed_ips.iter().any(|ip| ip == client_ip_str) {
+                        if let Some(r) = self.rules.get("SAT-BIZ-02") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Client IP '{}' not in allowed whitelist {:?} for rule '{}'", client_ip_str, allowed_ips, rule.name);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Client IP '{}' denied by whitelist in rule '{}'.", client_ip_str, rule.name));
+                        }
+                        break;
+                    }
+                }
+
+                // Check required headers
+                if let Some(ref req_headers) = rule.required_headers {
+                    let missing_header = req_headers.iter().find(|h| {
+                        !req.headers.keys().any(|k| k.eq_ignore_ascii_case(h))
+                    });
+                    if let Some(missing) = missing_header {
+                        if let Some(r) = self.rules.get("SAT-BIZ-03") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Mandatory header '{}' missing for route '{}' under rule '{}'", missing, prefix_str, rule.name);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Missing required header '{}' specified by rule '{}'.", missing, rule.name));
+                        }
+                        break;
+                    }
+                }
+
+                // Check max body bytes
+                if let Some(max_bytes) = rule.max_body_bytes {
+                    if req.body.len() > max_bytes {
+                        if let Some(r) = self.rules.get("SAT-BIZ-04") {
+                            let mut customized = r.clone();
+                            customized.description = format!("Request body size ({} bytes) exceeds limit of {} bytes defined in rule '{}'", req.body.len(), max_bytes, rule.name);
+                            matched_rules.push(customized);
+                            active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Body length {} exceeds {} limit for rule '{}'.", req.body.len(), max_bytes, rule.name));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 15. Dynamic hot-compiled rules evaluation
         let mut dynamic_matched = false;
         {
             let dyn_rules = self.dynamic_clauses.read().unwrap();

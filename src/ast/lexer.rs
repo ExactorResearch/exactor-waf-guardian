@@ -47,6 +47,10 @@ pub struct LexicalTokens {
     // Stateful Behavioral tokens
     pub has_stateful_rate_limit: bool,
     pub has_stateful_credential_stuffing: bool,
+    // Modular Protection Islands tokens
+    pub has_wordpress_probe: bool,
+    pub has_sensitive_file_probe: bool,
+    pub has_framework_exploit_probe: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -68,6 +72,9 @@ static RE_PATH_DIRECT_SYSTEM: OnceLock<Regex> = OnceLock::new();
 static RE_PATH_DOTS_ONLY: OnceLock<Regex> = OnceLock::new();
 static RE_SSRF_METADATA: OnceLock<Regex> = OnceLock::new();
 static RE_COMMENT_STRIP: OnceLock<Regex> = OnceLock::new();
+static RE_WORDPRESS_PROBE: OnceLock<Regex> = OnceLock::new();
+static RE_SENSITIVE_EXPOSURE: OnceLock<Regex> = OnceLock::new();
+static RE_FRAMEWORK_EXPLOIT: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
@@ -125,6 +132,15 @@ fn init_regexes() {
     });
     let _ = RE_COMMENT_STRIP.get_or_init(|| {
         Regex::new(r#"/\*.*?\*/"#).unwrap()
+    });
+    let _ = RE_WORDPRESS_PROBE.get_or_init(|| {
+        Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php|json/wp/)|xmlrpc\.php|\?author=\d+|wlwmanifest\.xml)"#).unwrap()
+    });
+    let _ = RE_SENSITIVE_EXPOSURE.get_or_init(|| {
+        Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws/credentials|/(?:phpmyadmin|pma|adminer\.php|actuator(?:/[a-z]+)?|swagger-ui|\.svn|docker-compose\.ya?ml|Dockerfile|dump\.sql|backup\.sql|web\.config))"#).unwrap()
+    });
+    let _ = RE_FRAMEWORK_EXPLOIT.get_or_init(|| {
+        Regex::new(r#"(?i)(?:\$\{jndi:(?:ldap|rmi|dns|corba|iiop)|#\{T\([a-z0-9_.]+\)|\$\{T\([a-z0-9_.]+\)|_ignition/execute-solution|invokefunction&function=call_user_func)"#).unwrap()
     });
 }
 
@@ -324,6 +340,20 @@ impl AstLexer {
             tokens.active_token_names.extend(jwt.active_tokens.clone());
         }
 
+        // 9. Modular Protection Island Tokens
+        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&normalized) {
+            tokens.has_wordpress_probe = true;
+            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+        }
+        if RE_SENSITIVE_EXPOSURE.get().unwrap().is_match(&normalized) {
+            tokens.has_sensitive_file_probe = true;
+            tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
+        }
+        if RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&normalized) {
+            tokens.has_framework_exploit_probe = true;
+            tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
+        }
+
         tokens.active_token_names.sort();
         tokens.active_token_names.dedup();
         tokens
@@ -379,6 +409,21 @@ impl AstLexer {
             tokens.has_jwt_header_injection = true;
         }
         tokens.active_token_names.extend(jwt.active_tokens);
+
+        // E. Direct Target & Path Specific Island Checks (ensures exact URI match)
+        let path_and_query = format!("{}?{}", req.path, req.query_string);
+        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&path_and_query) {
+            tokens.has_wordpress_probe = true;
+            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+        }
+        if RE_SENSITIVE_EXPOSURE.get().unwrap().is_match(&path_and_query) {
+            tokens.has_sensitive_file_probe = true;
+            tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
+        }
+        if RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&path_and_query) || RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&req.body) {
+            tokens.has_framework_exploit_probe = true;
+            tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
+        }
 
         tokens.active_token_names.sort();
         tokens.active_token_names.dedup();
