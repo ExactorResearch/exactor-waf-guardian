@@ -310,6 +310,33 @@ curl -s http://127.0.0.1:9002/api/waf/metrics | jq .
 
 ---
 
+### Capa 5: Consola Operativa en Terminal (`exactor-top` y `exactor-rules`)
+
+Para la administración in situ y observabilidad sin depender de navegadores externos, se implementó una suite completa en terminal basada en `curses` (con modo dual CLI):
+
+1. **`exactor-top` (Monitor Forense en Tiempo Real):**
+   - Inspirado en `htop` / `btop`.
+   - Visualiza en vivo las peticiones inspeccionadas, latencias percentiles (P95, P99), distribución de ataques y estado del ring buffer de tasa temporal.
+   - Permite navegar con las flechas y presionar `[ENTER]` para inspeccionar el árbol sintáctico (AST) y la deducción matemática formal en LaTeX de cualquier petición bloqueada.
+   ```bash
+   exactor-top
+   ```
+
+2. **`exactor-rules` (Centro de Control de Reglas e Islas Modulares):**
+   - Interfaz interactiva TUI para gestión en caliente sin reiniciar el WAF.
+   - **Gestión de Islas de Certeza:** Conmuta al instante escudos modulares (`[ESPACIO]`):
+     - `wordpress_shield`: Bloqueo inmediato de escaneos a `/wp-admin`, `/wp-login.php`, `xmlrpc.php` (se apaga si el cliente aloja WordPress legítimo).
+     - `exposure_shield`: Detección de sondeos a `/.env`, `/.git`, `phpMyAdmin`, backups SQL.
+     - `framework_shield`: Prevención de ejecución remota en Log4j/JNDI, Spring SpEL y Laravel.
+   - **Reglas de Negocio del Cliente:** Añade (`[A]`), conmuta (`[T]`), visualiza (`[E]`) o elimina (`[D]`) reglas de control de acceso (rutas, métodos permitidos, whitelists de IP, encabezados obligatorios y cuotas de payload).
+   - **Simulador SAT en Vivo (`[P]`):** Ejecuta pruebas de peticiones HTTP en tiempo real contra el motor local, arrojando veredicto, regla disparada y tiempo exacto en microsegundos.
+   - **Persistencia Dual:** Actualiza la memoria caliente vía REST API (`/api/waf/rules/customer`) y persiste de forma permanente en `waf_config.toml` (`[S]`).
+   ```bash
+   exactor-rules
+   ```
+
+---
+
 ### Runbook: Matriz de Triage Rápido ante Errores (SRE / Soporte)
 
 | Código HTTP | Diagnóstico Rápido | Causa Probable | Acción Correctiva Inmediata |
