@@ -132,7 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             query,
             body,
         }) => {
-            run_cli_inspect(&method, &path, &query, &body);
+            run_cli_inspect(&config, &method, &path, &query, &body);
             Ok(())
         }
         Some(Commands::Benchmark { requests }) => {
@@ -428,7 +428,7 @@ async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error:
 }
 
 /// Standalone CLI single-payload inspector.
-fn run_cli_inspect(method: &str, path: &str, query: &str, body: &str) {
+fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, body: &str) {
     let payload = HttpRequestPayload {
         id: uuid::Uuid::new_v4().to_string()[..8].to_string(),
         method: method.to_string(),
@@ -439,7 +439,7 @@ fn run_cli_inspect(method: &str, path: &str, query: &str, body: &str) {
         client_ip: None,
     };
 
-    let engine = ExactorSatEngine::new();
+    let engine = ExactorSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
     let proof = engine.evaluate_payload(&payload);
 
     println!("\n🔍 Exactor WAF Guardian: Payload Inspection Report");
