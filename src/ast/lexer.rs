@@ -121,7 +121,7 @@ fn init_regexes() {
         Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f){2,}"#).unwrap()
     });
     let _ = RE_SSRF_METADATA.get_or_init(|| {
-        Regex::new(r#"(?i)(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|instance-data|gopher://|dict://|file://|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"#).unwrap()
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|instance-data|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"#).unwrap()
     });
     let _ = RE_COMMENT_STRIP.get_or_init(|| {
         Regex::new(r#"/\*.*?\*/"#).unwrap()
@@ -276,13 +276,8 @@ impl AstLexer {
             tokens.active_token_names.push("DIRECT_SYSTEM_FILE_TARGET".to_string());
         }
 
-        // 5. SSRF Tokens
-        let has_uri_scheme = norm_lower.contains("http://")
-            || norm_lower.contains("https://")
-            || norm_lower.contains("gopher://")
-            || norm_lower.contains("file://")
-            || norm_lower.contains("dict://");
-        if has_uri_scheme && RE_SSRF_METADATA.get().unwrap().is_match(&normalized) {
+        // 5. SSRF Tokens (requires URL scheme directly targeting loopback, RFC1918, or cloud metadata)
+        if RE_SSRF_METADATA.get().unwrap().is_match(&normalized) {
             tokens.has_ssrf_metadata = true;
             tokens.active_token_names.push("CLOUD_METADATA_ENDPOINT".to_string());
         }

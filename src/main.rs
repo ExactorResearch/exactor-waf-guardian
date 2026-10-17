@@ -286,7 +286,6 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         });
     }
 
-<<<<<<< HEAD
     // Optional concurrent Envoy ext_authz HTTP verification service
     if let Some(ref envoy_addr_str) = config.envoy_ext_authz_addr {
         let envoy_state = EnvoyAuthzState::new(
@@ -308,7 +307,10 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
             .await
             {
                 tracing::error!(target: "exactor::envoy", "Envoy ext_authz service error: {}", e);
-=======
+            }
+        });
+    }
+
     // Optional concurrent SafeLine T1K server listener
     if let Some(ref t1k_addr) = config.t1k_listen_addr {
         let safeline_reporter = if let Some(ref pg_url) = config.safeline_pg_url {
@@ -335,7 +337,6 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         tokio::spawn(async move {
             if let Err(e) = run_t1k_server(&addr_clone, t1k_state).await {
                 error!(target: "exactor::t1k", "T1K server background error: {}", e);
->>>>>>> feature/safeline-t1k-integration
             }
         });
     }
