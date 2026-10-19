@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2021"
 authors = ["Exactor Team"]
 license = "MIT OR Apache-2.0"
-description = "Production-grade, sub-millisecond SAT Web Application Firewall (WAF) reverse-proxy and agent with autonomous exact Boolean simplification via exactor.tech"
+description = "Guardian WAF: Production-grade, sub-millisecond SAT Web Application Firewall (WAF) reverse-proxy and agent with autonomous exact Boolean simplification via exactor.tech"
 
 [dependencies]
 # Async Runtime & Networking

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Exactor WAF Guardian - Automated Server Installation Script
+# Guardian WAF - Automated Server Installation Script
 # Operating Systems: Ubuntu, Debian, RHEL, CentOS, Rocky Linux, Alpine
 # ==============================================================================
 
@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}============================================================${NC}"
-echo -e "${BLUE}🛡️  Installing Exactor WAF Guardian Server Component${NC}"
+echo -e "${BLUE}🛡️  Installing Guardian WAF Server Component${NC}"
 echo -e "${BLUE}   Deterministic SAT Cyber-Defense & Reverse Proxy${NC}"
 echo -e "${BLUE}   Engine: EXACTOR Core & https://exactor.tech${NC}"
 echo -e "${BLUE}============================================================${NC}"
@@ -134,7 +134,7 @@ if [[ -d "/etc/systemd/system" ]]; then
     else
         cat << 'EOF' > "${SERVICE_FILE}"
 [Unit]
-Description=Exactor WAF Guardian - Deterministic SAT Cyber-Defense Proxy
+Description=Guardian WAF - Deterministic SAT Cyber-Defense Proxy
 Documentation=https://github.com/ExactorResearch/exactor-waf-guardian
 After=network.target network-online.target
 Wants=network-online.target
@@ -183,7 +183,7 @@ if command -v systemctl &> /dev/null && systemctl is-system-running &> /dev/null
     systemctl restart exactor-waf.service
     sleep 1
     if systemctl is-active --quiet exactor-waf.service; then
-        echo -e "${GREEN}✅ Exactor WAF Guardian is ACTIVE and protecting your server!${NC}"
+        echo -e "${GREEN}✅ Guardian WAF is ACTIVE and protecting your server!${NC}"
     else
         echo -e "${RED}⚠️  Service failed to start. Check logs with: journalctl -u exactor-waf -e${NC}"
     fi

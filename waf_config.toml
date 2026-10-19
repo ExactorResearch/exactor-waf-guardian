@@ -1,5 +1,5 @@
 # ==============================================================================
-# EXACTOR WAF GUARDIAN - PRODUCTION CONFIGURATION
+# GUARDIAN WAF - PRODUCTION CONFIGURATION
 # Sub-Millisecond Deterministic SAT Cyber-Defense & Reverse Proxy
 # Powered by EXACTOR Core & exactor.tech Cloud Synthesis
 # ==============================================================================
@@ -72,7 +72,7 @@ envoy_ext_authz_addr = "0.0.0.0:9002"
 # safeline_pg_url = "postgres://safeline-ce:safeline-ce@safeline-pg:5432/safeline-ce?sslmode=disable"
     
 # ==============================================================================
-# MODULAR CERTAINTY ISLANDS (ISLAS DE CERTEZA)
+# MODULAR CERTAINTY ISLANDS
 # ==============================================================================
 [islands]
 # WordPress Reconnaissance & Exploit Shield:
@@ -89,7 +89,7 @@ exposure_shield = true
 framework_shield = true
 
 # ==============================================================================
-# CUSTOMER BUSINESS RULES (REGLAS DE NEGOCIO Y CONTROL DE ACCESO DECLARATIVO)
+# CUSTOMER BUSINESS RULES (DECLARATIVE ACCESS CONTROL)
 # ==============================================================================
 [business_rules]
 enabled = true
@@ -120,7 +120,7 @@ required_headers = ["X-Admin-Token"] # Mandatory administrative header
 max_body_bytes = 1048576 # 1 MB
 enabled = false # Enable when internal admin route is active
 
-# Regla aprobada por el Administrador via EXACTOR-ADVISOR
+# Rule approved by Administrator via GUARDIAN-ADVISOR
 [[business_rules.rules]]
 id = "biz-method-api-v1-products"
 name = "Method Restriction for /api/v1/products"

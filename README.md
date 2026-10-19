@@ -1,4 +1,4 @@
-# Exactor WAF Guardian
+# Guardian WAF
 
 [![License: MIT/Apache-2.0](https://img.shields.io/badge/License-MIT%2FApache--2.0-blue.svg)](#license)
 [![Powered by](https://img.shields.io/badge/Engine-Exactor%20Core%20(Rust)-orange.svg)](https://github.com/ExactorResearch/exactor-accelerator)
@@ -8,9 +8,9 @@
 [![Proof of Concept](https://img.shields.io/badge/PoC-Interactive%20Duel-success.svg)](PROOF_OF_CONCEPT.md)
 [![Epistemology](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
 
-**Exactor WAF Guardian** is a production-grade Web Application Firewall (WAF) reverse-proxy and server daemon engineered in **Rust**, accompanied by an empirical **Interactive Proof of Concept (PoC)** suite in Python.
+**Guardian WAF** is a production-grade Web Application Firewall (WAF) reverse-proxy and server daemon engineered in **Rust**, accompanied by an empirical **Interactive Proof of Concept (PoC)** suite in Python.
 
-It implements deterministic Neuro-Symbolic SAT verification and formal **Certainty Islands (Islas de Certeza)** for real-time edge cybersecurity, resolving the fundamental trilemma of modern application security: **combining deep cognitive reasoning with sub-millisecond network SLAs (< 0.05 ms), 100% mathematically verifiable causal proofs, zero marginal inference cost, and autonomous Boolean logic minimization via [https://exactor.tech](https://exactor.tech).**
+It implements deterministic Neuro-Symbolic SAT verification and formal **Certainty Islands** for real-time edge cybersecurity, resolving the fundamental trilemma of modern application security: **combining deep cognitive reasoning with sub-millisecond network SLAs (< 0.05 ms), 100% mathematically verifiable causal proofs, zero marginal inference cost, and autonomous Boolean logic minimization via [https://exactor.tech](https://exactor.tech).**
 
 > 📘 **Foundational Theoretical Documentation:**  
 > To understand how the WAF classifies without manual human labeling, and how rules are synthesized and generalized by consuming Silicon Units (SU), see [Axiomatic Supervision and Inductive Synthesis in EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
@@ -212,7 +212,7 @@ Expected terminal output:
                                  │
                                  ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   EXACTOR WAF GUARDIAN (Rust Server)                   │
+│                      GUARDIAN WAF (Rust Server)                        │
 │                                                                        │
 │  1. Multi-Stage Grammar Normalizer & AST Lexer                         │
 │     - Multi-pass recursive URL decoding (%20, %2e%2e%2f)               │
@@ -224,7 +224,7 @@ Expected terminal output:
 │     - Shannon entropy binarizer & Boolean Hypercube {0, 1}^N           │
 │                                                                        │
 │  2. In-Memory Fast-Path SAT Solver (< 0.02 ms)                         │
-│     Evaluates 10 Formal Certainty Islands (Islas de Certeza):          │
+│     Evaluates 10 Formal Certainty Islands:                             │
 │     • ISLAND-SQLI       (Tautologies, UNION select, Time-delay, DDL)   │
 │     • ISLAND-XSS        (Script contexts, Event attributes, SVG, URIs) │
 │     • ISLAND-RCE        (Shell chains, Subshells, Dynamic eval sinks)  │
@@ -269,7 +269,7 @@ Expected terminal output:
 
 ---
 
-## 🛡️ The 10 Certainty Islands (Islas de Certeza)
+## 🛡️ The 10 Certainty Islands
 
 | Island ID | Domain | Target Vector & Formal Invariant | Action |
 | :--- | :--- | :--- | :---: |
@@ -316,7 +316,7 @@ Compares Accuracy, False Negatives, False Positives, Latency, and Cost across al
 
 ## 🌊 Blue Ocean Strategy Comparison
 
-| Competitive Factor | Traditional Regex WAF (ModSecurity / CRS) | Cloud LLM WAF (Cloudflare AI / AWS) | Exactor WAF Guardian (Rust) |
+| Competitive Factor | Traditional Regex WAF (ModSecurity / CRS) | Cloud LLM WAF (Cloudflare AI / AWS) | Guardian WAF (Rust) |
 | :--- | :---: | :---: | :---: |
 | **Inference Cost** | Low | High ($2,000+ / 1M reqs) | **$0.00 (Local Deterministic)** |
 | **Network SLA Compliance** | Fast ($1 - 5\text{ ms}$) | Unacceptable ($350 - 650\text{ ms}$) | **Ultra-Fast (< 0.05 ms / < 20 µs)** |
@@ -484,7 +484,7 @@ exactor-waf-guardian inspect --method GET --path "/api/users" --query "id=1' OR 
 ```
 **Example Terminal Output:**
 ```text
-🔍 Exactor WAF Guardian: Payload Inspection Report
+🔍 Guardian WAF: Payload Inspection Report
 ============================================================
 Request ID       : req_84920481
 Target Path      : /api/users

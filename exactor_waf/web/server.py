@@ -93,7 +93,7 @@ def get_rules():
 
 @app.get("/api/waf/islands")
 def get_islands():
-    """Returns the catalog of Certainty Islands (Islas de Certeza)."""
+    """Returns the catalog of Certainty Islands."""
     islands = [
         {
             "island_id": isl.island_id,

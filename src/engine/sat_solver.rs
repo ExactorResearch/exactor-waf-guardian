@@ -20,7 +20,7 @@ pub struct DynamicCompiledClause {
     pub category: AttackCategory,
 }
 
-/// Deterministic Neuro-Symbolic & SAT Constraint Engine with Certainty Islands (Islas de Certeza).
+/// Deterministic Neuro-Symbolic & SAT Constraint Engine with Certainty Islands.
 pub struct ExactorSatEngine {
     islands: HashMap<String, CertaintyIsland>,
     rules: HashMap<String, DeductionRule>,

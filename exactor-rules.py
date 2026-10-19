@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
- EXACTOR-RULES: Administrador Interactivo de Reglas e Islas para EXACTOR WAF
- Interfaz TUI estilo htop/btop en curses para gestión en tiempo real de:
-   - Reglas de Negocio del Cliente (Customer Business Rules)
-   - Islas de Protección Modulares (WordPress, Exposición, Frameworks)
-   - Inspector de Deducción Matemática SAT en Vivo
+ GUARDIAN-RULES: Interactive Rule & Protection Island Manager for Guardian WAF
+ Curses TUI control plane inspired by htop/btop for real-time management of:
+   - Customer Business Rules
+   - Modular Protection Islands (WordPress, Exposure, Frameworks)
+   - Live SAT Mathematical Deduction Inspector
 ===============================================================================
 """
 
@@ -24,7 +24,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-# Reducir retraso de tecla ESC para respuesta instantánea en ncurses
+# Reduce ESC key delay for instantaneous response in ncurses
 os.environ.setdefault("ESCDELAY", "25")
 
 try:
@@ -72,7 +72,7 @@ class WafApiClient:
     def _request(self, method, endpoint, data=None, timeout=2.0):
         url = f"{self.base_url}{endpoint}"
         req_data = None
-        headers = {"User-Agent": "Exactor-Rules-TUI/1.0"}
+        headers = {"User-Agent": "Guardian-Rules-TUI/1.0"}
         if data is not None:
             req_data = json.dumps(data).encode("utf-8")
             headers["Content-Type"] = "application/json"
@@ -136,9 +136,9 @@ class ExactorRulesApp:
     def __init__(self, api_url=DEFAULT_API_URL, config_path=None):
         self.api = WafApiClient(api_url)
         self.config_path = find_config_file(config_path)
-        self.active_tab = 0  # 0: Customer Rules, 1: Protection Islands, 2: Simulator
+        self.active_tab = 0  # 0: Customer Rules, 1: Protection Islands, 2: Simulator, 3: Advisor
         self.is_connected = False
-        self.connection_msg = "Conectando..."
+        self.connection_msg = "Connecting..."
         
         # State
         self.rules = []
@@ -150,7 +150,7 @@ class ExactorRulesApp:
         self.selected_rule_idx = 0
         self.selected_island_idx = 0
         self.scroll_offset = 0
-        self.status_message = "Listo."
+        self.status_message = "Ready."
         self.status_time = time.time()
         
         # Inspection simulator state
@@ -183,13 +183,13 @@ class ExactorRulesApp:
                 if "error" not in res:
                     self.advisor_patterns = res["patterns"]
                     self.advisor_suggestions = res["suggestions"]
-                    self.set_status(f"AI Advisor: {len(self.advisor_suggestions)} propuestas formuladas con Gemelo Digital.")
+                    self.set_status(f"AI Advisor: {len(self.advisor_suggestions)} proposals formulated with Digital Twin.")
                 else:
                     self.set_status(f"AI Advisor: {res['error']}")
             else:
-                self.set_status("No se encontró exactor-advisor.py")
+                self.set_status("Could not locate exactor-advisor.py")
         except Exception as e:
-            self.set_status(f"Error AI Advisor: {e}")
+            self.set_status(f"AI Advisor Error: {e}")
 
     def handle_approve_advisor_rule(self):
         if not (0 <= self.selected_advisor_idx < len(self.advisor_suggestions)):
@@ -204,16 +204,16 @@ class ExactorRulesApp:
             if self.is_connected:
                 self.api.save_customer_rule(payload)
             self.save_to_toml()
-            self.set_status(f"[APROBADA] Regla '{payload['id']}' implementada en caliente y guardada en TOML.")
+            self.set_status(f"[APPROVED] Rule '{payload['id']}' hot-applied and saved to TOML.")
         elif sug["type"] == "island_toggle":
             k = sug["island_key"]
             self.islands[k] = sug["target_value"]
             if self.is_connected:
                 self.api.update_islands_config(self.islands)
             self.save_to_toml()
-            self.set_status(f"[APROBADA] Isla '{k}' activada en WAF y guardada en TOML.")
+            self.set_status(f"[APPROVED] Island '{k}' enabled in WAF and saved to TOML.")
         else:
-            self.set_status(f"[APROBADA] Acción '{sug['action_name']}' procesada.")
+            self.set_status(f"[APPROVED] Action '{sug['action_name']}' processed.")
 
     def handle_reject_advisor_rule(self):
         if not (0 <= self.selected_advisor_idx < len(self.advisor_suggestions)):
@@ -221,8 +221,8 @@ class ExactorRulesApp:
         sug = self.advisor_suggestions.pop(self.selected_advisor_idx)
         if self.selected_advisor_idx >= len(self.advisor_suggestions) and self.selected_advisor_idx > 0:
             self.selected_advisor_idx -= 1
-        sug_id = sug.get("rule_id", sug.get("island_key", "regla"))
-        self.set_status(f"[RECHAZADA] Propuesta '{sug_id}' descartada por el operador (sin cambios).")
+        sug_id = sug.get("rule_id", sug.get("island_key", "rule"))
+        self.set_status(f"[REJECTED] Proposal '{sug_id}' dismissed by operator (no changes applied).")
 
     def sync_data(self):
         healthy, h_data = self.api.check_health()
@@ -302,13 +302,13 @@ class ExactorRulesApp:
                 parsed_rules.append(cur_rule)
             self.rules = parsed_rules
         except Exception as e:
-            self.set_status(f"Error cargando TOML: {e}")
+            self.set_status(f"Error loading TOML: {e}")
 
     def save_to_toml(self):
         try:
             lines = [
                 "# ==============================================================================",
-                "# EXACTOR WAF GUARDIAN - CONFIGURATION PERSISTED BY EXACTOR-RULES TUI",
+                "# GUARDIAN WAF - CONFIGURATION PERSISTED BY GUARDIAN-RULES TUI",
                 f"# Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                 "# ==============================================================================",
                 "",
@@ -348,9 +348,9 @@ class ExactorRulesApp:
 
             with open(self.config_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(lines))
-            self.set_status(f"Guardado exitoso en {self.config_path}")
+            self.set_status(f"Saved successfully to {self.config_path}")
         except Exception as e:
-            self.set_status(f"Fallo al guardar TOML: {e}")
+            self.set_status(f"Failed to save TOML: {e}")
 
     # =========================================================================
     # CURSES TUI IMPLEMENTATION
@@ -412,7 +412,7 @@ class ExactorRulesApp:
                     self.load_advisor()
                 else:
                     self.sync_data()
-                    self.set_status("Datos sincronizados.")
+                    self.set_status("Data synchronized.")
             elif ch in (ord('p'), ord('P')):
                 self.show_simulator_dialog(stdscr)
 
@@ -460,7 +460,7 @@ class ExactorRulesApp:
                 rule["enabled"] = not rule.get("enabled", True)
                 if self.is_connected:
                     self.api.save_customer_rule(rule)
-                self.set_status(f"Regla '{rule['id']}' conmutada a {'ACTIVA' if rule['enabled'] else 'INACTIVA'}.")
+                self.set_status(f"Rule '{rule['id']}' toggled to {'ACTIVE' if rule['enabled'] else 'INACTIVE'}.")
         elif self.active_tab == 1:
             keys = ["wordpress_shield", "exposure_shield", "framework_shield"]
             target_key = keys[self.selected_island_idx]
@@ -468,16 +468,16 @@ class ExactorRulesApp:
             self.islands[target_key] = new_val
             if self.is_connected:
                 self.api.update_islands_config(self.islands)
-            self.set_status(f"Isla '{target_key}' conmutada a {'ACTIVADA' if new_val else 'DESACTIVADA'}.")
+            self.set_status(f"Island '{target_key}' toggled to {'ACTIVE' if new_val else 'DISABLED'}.")
 
     def handle_delete_rule(self, stdscr):
         if not (0 <= self.selected_rule_idx < len(self.rules)):
             return
         rule = self.rules[self.selected_rule_idx]
-        rid = rule.get("id", "desconocida")
+        rid = rule.get("id", "unknown")
         
         max_y, max_x = stdscr.getmaxyx()
-        prompt = f"¿Eliminar regla '{rid}'? [y/N]: "
+        prompt = f"Delete rule '{rid}'? [y/N]: "
         safe_addstr(stdscr, max_y - 2, 2, prompt, curses.color_pair(3) | curses.A_BOLD)
         stdscr.refresh()
         
@@ -487,36 +487,36 @@ class ExactorRulesApp:
         curses.noecho()
         curses.curs_set(0)
         
-        if resp in ("y", "yes", "s", "si"):
+        if resp in ("y", "yes"):
             if self.is_connected:
                 self.api.delete_customer_rule(rid)
             self.rules.pop(self.selected_rule_idx)
             if self.selected_rule_idx >= len(self.rules) and self.selected_rule_idx > 0:
                 self.selected_rule_idx -= 1
-            self.set_status(f"Regla '{rid}' eliminada.")
+            self.set_status(f"Rule '{rid}' deleted.")
         else:
-            self.set_status("Operación de eliminación cancelada.")
+            self.set_status("Deletion cancelled.")
 
     def render(self, stdscr):
         stdscr.clear()
         max_y, max_x = stdscr.getmaxyx()
         if max_y < 12 or max_x < 60:
-            safe_addstr(stdscr, 0, 0, "Terminal demasiado pequeño para EXACTOR-RULES.", curses.color_pair(2))
+            safe_addstr(stdscr, 0, 0, "Terminal window too small for GUARDIAN-RULES.", curses.color_pair(2))
             return
 
-        title = " EXACTOR-RULES v0.2.0 — Deterministic SAT Cyber-Defense Control Plane "
+        title = " GUARDIAN-RULES v0.2.0 — Deterministic SAT Cyber-Defense Control Plane "
         safe_addstr(stdscr, 0, 0, title.ljust(max_x), curses.color_pair(7) | curses.A_BOLD)
 
         status_color = curses.color_pair(1) if self.is_connected else curses.color_pair(2)
-        safe_addstr(stdscr, 1, 2, f"Motor WAF: {self.connection_msg}", status_color | curses.A_BOLD)
+        safe_addstr(stdscr, 1, 2, f"WAF Engine: {self.connection_msg}", status_color | curses.A_BOLD)
         safe_addstr(stdscr, 1, 40, f"Config TOML: {self.config_path}", curses.color_pair(4))
 
         tab_y = 3
         tabs = [
-            (" [1] Reglas de Negocio (Customer) ", 0),
-            (" [2] Islas de Certeza (Islands) ", 1),
-            (" [3] Inspector / Simulador SAT ", 2),
-            (" [4] AI Advisor Forense ", 3),
+            (" [1] Customer Rules ", 0),
+            (" [2] Certainty Islands ", 1),
+            (" [3] SAT Inspector / Simulator ", 2),
+            (" [4] Forensic AI Advisor ", 3),
         ]
         curr_x = 2
         for title_str, idx in tabs:
@@ -540,19 +540,19 @@ class ExactorRulesApp:
 
         status_y = max_y - 2
         safe_addstr(stdscr, status_y, 0, " " * max_x, curses.color_pair(4))
-        safe_addstr(stdscr, status_y, 2, f"Mensaje: {self.status_message}", curses.color_pair(3) | curses.A_BOLD)
+        safe_addstr(stdscr, status_y, 2, f"Status: {self.status_message}", curses.color_pair(3) | curses.A_BOLD)
 
         footer_y = max_y - 1
-        keys_help = "TAB/1-4: Vistas | Y: Aprobar IA | N: Rechazar | Espacio/T: Toggle | A: Añadir | D: Eliminar | S: Guardar | Q: Salir"
+        keys_help = "TAB/1-4: Views | Y: Approve AI | N: Reject | Space/T: Toggle | A: Add | D: Delete | S: Save | Q: Quit"
         safe_addstr(stdscr, footer_y, 0, keys_help.ljust(max_x), curses.color_pair(6) | curses.A_BOLD)
 
     def render_customer_rules(self, stdscr, start_y, end_y, max_x):
-        header = f" {'ID':<20s} {'ESTADO':<10s} {'RUTA':<20s} {'MÉTODOS PERMITIDOS':<22s} {'RESTRICCIÓN IP / ENCABEZADO':<30s}"
+        header = f" {'ID':<20s} {'STATUS':<10s} {'PATH':<20s} {'ALLOWED METHODS':<22s} {'IP / HEADER RESTRICTIONS':<30s}"
         safe_addstr(stdscr, start_y, 0, header.ljust(max_x), curses.color_pair(4) | curses.A_BOLD)
 
         avail_rows = end_y - start_y - 1
         if not self.rules:
-            safe_addstr(stdscr, start_y + 2, 4, "No hay reglas de negocio definidas. Presione [A] para añadir una nueva.", curses.color_pair(3))
+            safe_addstr(stdscr, start_y + 2, 4, "No business rules defined. Press [A] to add a new rule.", curses.color_pair(3))
             return
 
         if self.selected_rule_idx >= self.scroll_offset + avail_rows:
@@ -570,11 +570,11 @@ class ExactorRulesApp:
 
             rid = r.get("id", f"rule-{rule_idx}")[:19]
             enabled = r.get("enabled", True)
-            status_badge = "[ ACTIVA ]" if enabled else "[ INACT. ]"
+            status_badge = "[ ACTIVE ]" if enabled else "[ INACT. ]"
             path = r.get("path_prefix", "*")[:19]
             
             allowed = r.get("allowed_methods")
-            methods_str = ", ".join(allowed) if allowed else "TODOS"
+            methods_str = ", ".join(allowed) if allowed else "ALL"
             methods_str = methods_str[:21]
 
             ips = r.get("allowed_ips")
@@ -586,7 +586,7 @@ class ExactorRulesApp:
                 constraints.append(f"Hdr: {','.join(hdrs)}")
             if r.get("max_body_bytes"):
                 constraints.append(f"Max: {r['max_body_bytes']}B")
-            const_str = " | ".join(constraints) if constraints else "Sin restricciones IP/Hdr"
+            const_str = " | ".join(constraints) if constraints else "No IP/Hdr restrictions"
             const_str = const_str[:29]
 
             line_str = f" {rid:<20s} {status_badge:<10s} {path:<20s} {methods_str:<22s} {const_str:<30s}"
@@ -598,30 +598,30 @@ class ExactorRulesApp:
                 safe_addstr(stdscr, y, 0, line_str.ljust(max_x), attr)
 
     def render_islands_view(self, stdscr, start_y, end_y, max_x):
-        safe_addstr(stdscr, start_y, 2, "ISLAS DE CERTEZA MODULARES (Certainty Islands Toggle)", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 1, 2, "Las islas activas evalúan en caliente y descartan automáticamente tráfico hostil con latencia < 50 µs.", curses.color_pair(3))
+        safe_addstr(stdscr, start_y, 2, "MODULAR CERTAINTY ISLANDS (Defense Islands Toggle)", curses.color_pair(4) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 1, 2, "Active islands evaluate hot invariants and automatically drop hostile traffic in < 50 µs.", curses.color_pair(3))
 
         islands_meta = [
             (
                 "wordpress_shield",
                 "ISLAND-WORDPRESS",
                 "WordPress Scanner & Exploit Shield",
-                "Bloquea rastreadores de /wp-admin, /wp-login.php, xmlrpc.php, etc.",
-                "Desactivar SÓLO si este servidor aloja legítimamente WordPress."
+                "Drops scanner probes targeting /wp-admin, /wp-login.php, xmlrpc.php, etc.",
+                "Disable ONLY if this server legitimately hosts a WordPress application."
             ),
             (
                 "exposure_shield",
                 "ISLAND-EXPOSURE",
                 "Sensitive Files & Backdoor Shield",
-                "Bloquea sondeos a /.env, /.git, phpMyAdmin, actuator, volcados SQL.",
-                "Impide el reconocimiento de credenciales y consolas sin autenticar."
+                "Blocks reconnaissance targeting /.env, /.git, phpMyAdmin, actuator, SQL dumps.",
+                "Prevents credential harvesting and exposed unauthenticated admin consoles."
             ),
             (
                 "framework_shield",
                 "ISLAND-FRAMEWORK",
                 "Modern Framework Exploits Shield",
-                "Bloquea inyecciones Log4j/JNDI (${jndi:...}), Spring SpEL, Laravel Ignition.",
-                "Detiene intentos de ejecución remota dirigidos a frameworks empresariales."
+                "Blocks Log4j/JNDI (${jndi:...}), Spring SpEL, and Laravel Ignition injection.",
+                "Halts remote code execution attempts targeting enterprise application frameworks."
             ),
         ]
 
@@ -632,47 +632,46 @@ class ExactorRulesApp:
             
             box_attr = curses.color_pair(6) if is_selected else curses.color_pair(4)
             badge_attr = curses.color_pair(8) if enabled else curses.color_pair(9)
-            badge_text = " [ ACTIVA / BLINDAJE ON ] " if enabled else " [ DESACTIVADA / PERMITE PROBES ] "
+            badge_text = " [ ACTIVE / SHIELD ON ] " if enabled else " [ DISABLED / PROBES ALLOWED ] "
 
             safe_addstr(stdscr, card_y, 4, f"{'->' if is_selected else '  '} {island_id} :: {title}", box_attr | curses.A_BOLD)
             safe_addstr(stdscr, card_y, 60, badge_text, badge_attr | curses.A_BOLD)
             safe_addstr(stdscr, card_y + 1, 8, desc, curses.color_pair(1) if enabled else curses.color_pair(2))
-            safe_addstr(stdscr, card_y + 2, 8, f"Nota: {hint}", curses.color_pair(3))
+            safe_addstr(stdscr, card_y + 2, 8, f"Note: {hint}", curses.color_pair(3))
             safe_addstr(stdscr, card_y + 3, 4, "─" * (max_x - 8), curses.color_pair(4))
 
             card_y += 4
 
-        safe_addstr(stdscr, card_y + 1, 4, "[!] Use las flechas Arriba/Abajo y presione [ESPACIO] o [ENTER] para conmutar cualquier escudo.", curses.color_pair(3) | curses.A_BOLD)
+        safe_addstr(stdscr, card_y + 1, 4, "[!] Use Up/Down arrows and press [SPACE] or [ENTER] to toggle any protection shield.", curses.color_pair(3) | curses.A_BOLD)
 
     def render_simulator_view(self, stdscr, start_y, end_y, max_x):
-        safe_addstr(stdscr, start_y, 2, "INSPECTOR / SIMULADOR DE VERIFICACIÓN SAT EN VIVO", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 1, 2, "Simule peticiones HTTP contra el motor formal y verifique la deducción matemática generada.", curses.color_pair(3))
+        safe_addstr(stdscr, start_y, 2, "LIVE SAT VERIFICATION INSPECTOR / SIMULATOR", curses.color_pair(4) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 1, 2, "Simulate HTTP requests against the formal engine and inspect the resulting mathematical proof.", curses.color_pair(3))
 
-        safe_addstr(stdscr, start_y + 3, 4, f"Método HTTP : {self.sim_method}", curses.color_pair(1) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 4, 4, f"Ruta / URI  : {self.sim_path}", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 5, 4, f"Cuerpo/Body : {self.sim_body if self.sim_body else '(Vacío)'}", curses.color_pair(5))
-        safe_addstr(stdscr, start_y + 6, 4, "[ Presione 'P' para editar y ejecutar prueba ]", curses.color_pair(3))
+        safe_addstr(stdscr, start_y + 3, 4, f"HTTP Method : {self.sim_method}", curses.color_pair(1) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 4, 4, f"Path / URI  : {self.sim_path}", curses.color_pair(4) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 5, 4, f"Body Payload: {self.sim_body if self.sim_body else '(Empty)'}", curses.color_pair(5))
+        safe_addstr(stdscr, start_y + 6, 4, "[ Press 'P' to edit parameters and execute test ]", curses.color_pair(3))
 
         if self.sim_result:
-            safe_addstr(stdscr, start_y + 8, 2, "── RESULTADO DE EVALUACIÓN FORMAL ──", curses.color_pair(4) | curses.A_BOLD)
-            is_vio = self.sim_result.get("is_violation", False)
+            safe_addstr(stdscr, start_y + 8, 2, "── FORMAL EVALUATION RESULT ──", curses.color_pair(4) | curses.A_BOLD)
             act = self.sim_result.get("action", "ALLOW")
             cat = self.sim_result.get("category", "BENIGN")
             lat = self.sim_result.get("execution_time_us", 0.0)
 
             act_attr = curses.color_pair(9) if act == "BLOCK" else curses.color_pair(8)
-            safe_addstr(stdscr, start_y + 10, 4, f"DECISIÓN FINAL : {act} [{cat}]", act_attr | curses.A_BOLD)
-            safe_addstr(stdscr, start_y + 11, 4, f"Latencia SAT   : {lat:.2f} µs (Microsegundos)", curses.color_pair(1) | curses.A_BOLD)
+            safe_addstr(stdscr, start_y + 10, 4, f"FINAL DECISION : {act} [{cat}]", act_attr | curses.A_BOLD)
+            safe_addstr(stdscr, start_y + 11, 4, f"SAT Latency    : {lat:.2f} µs (Microseconds)", curses.color_pair(1) | curses.A_BOLD)
             
             rules = self.sim_result.get("matched_rules", [])
-            r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "Ninguna (Tráfico Benigno)"
-            safe_addstr(stdscr, start_y + 12, 4, f"Reglas Disparadas: {r_str}", curses.color_pair(3) | curses.A_BOLD)
+            r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "None (Benign Traffic)"
+            safe_addstr(stdscr, start_y + 12, 4, f"Triggered Rules: {r_str}", curses.color_pair(3) | curses.A_BOLD)
 
             causal = self.sim_result.get("causal_proof", "N/A")
-            safe_addstr(stdscr, start_y + 13, 4, f"Prueba Causal   : {causal}", curses.color_pair(4))
+            safe_addstr(stdscr, start_y + 13, 4, f"Causal Proof   : {causal}", curses.color_pair(4))
 
             deductions = self.sim_result.get("deduction_steps", [])
-            safe_addstr(stdscr, start_y + 15, 4, "Pasos Deductivos del SAT Solver:", curses.color_pair(4) | curses.A_BOLD)
+            safe_addstr(stdscr, start_y + 15, 4, "SAT Solver Deduction Steps:", curses.color_pair(4) | curses.A_BOLD)
             for d_idx, step in enumerate(deductions[:5]):
                 safe_addstr(stdscr, start_y + 16 + d_idx, 6, f"• {step}", curses.color_pair(1))
 
@@ -683,11 +682,11 @@ class ExactorRulesApp:
         
         dialog = curses.newwin(win_h, win_w, top_y, top_x)
         dialog.box()
-        safe_addstr(dialog, 0, 2, " SIMULADOR SAT - PARÁMETROS ", curses.color_pair(7) | curses.A_BOLD)
-        safe_addstr(dialog, 2, 4, "Método HTTP (GET/POST/DELETE/etc):", curses.color_pair(4))
-        safe_addstr(dialog, 4, 4, "Ruta / URI Path (ej. /wp-login.php):", curses.color_pair(4))
-        safe_addstr(dialog, 6, 4, "Body (opcional, ej. ${jndi:ldap:...}):", curses.color_pair(4))
-        safe_addstr(dialog, 10, 4, "[Enter para Ejecutar | ESC para Cancelar]", curses.color_pair(3))
+        safe_addstr(dialog, 0, 2, " SAT SIMULATOR - PARAMETERS ", curses.color_pair(7) | curses.A_BOLD)
+        safe_addstr(dialog, 2, 4, "HTTP Method (GET/POST/DELETE/etc):", curses.color_pair(4))
+        safe_addstr(dialog, 4, 4, "Path / URI (e.g. /wp-login.php):", curses.color_pair(4))
+        safe_addstr(dialog, 6, 4, "Body (optional, e.g. ${jndi:ldap:...}):", curses.color_pair(4))
+        safe_addstr(dialog, 10, 4, "[Enter to Execute | ESC to Cancel]", curses.color_pair(3))
         dialog.refresh()
 
         curses.echo()
@@ -714,22 +713,22 @@ class ExactorRulesApp:
             ok, res = self.api.inspect_payload(m, p, "", b)
             if ok:
                 self.sim_result = res
-                self.set_status("Inspección SAT completada exitosamente.")
+                self.set_status("SAT inspection completed successfully.")
             else:
-                self.set_status("Error al comunicar con /api/waf/inspect.")
+                self.set_status("Error communicating with /api/waf/inspect.")
         else:
-            self.set_status("WAF offline: Conecte el WAF para ejecutar simulaciones en vivo.")
+            self.set_status("WAF offline: Start Guardian WAF server to run live simulations.")
 
     def render_advisor_view(self, stdscr, start_y, end_y, max_x):
-        safe_addstr(stdscr, start_y, 2, "AI ADVISOR FORENSE — Análisis de Trazas y Gemelo Digital en Tiempo Real", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 1, 2, "Reglas generadas por TrafficPatternAgent & RuleSynthesizerAgent con 0% Falsos Positivos.", curses.color_pair(3))
+        safe_addstr(stdscr, start_y, 2, "FORENSIC AI ADVISOR — Trace Analysis & Digital Twin Simulation in Real Time", curses.color_pair(4) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 1, 2, "Rules synthesized by TrafficPatternAgent & RuleSynthesizerAgent with 0% False Positives.", curses.color_pair(3))
 
         if not self.advisor_suggestions:
-            safe_addstr(stdscr, start_y + 4, 4, "[✓] No hay sugerencias pendientes de aprobación. Su tráfico perimetral está optimizado.", curses.color_pair(1) | curses.A_BOLD)
-            safe_addstr(stdscr, start_y + 6, 4, "Presione 'R' para re-analizar trazas de la base de datos waf_ledger.db.", curses.color_pair(4))
+            safe_addstr(stdscr, start_y + 4, 4, "[✓] No pending suggestions for approval. Perimeter traffic is fully optimized.", curses.color_pair(1) | curses.A_BOLD)
+            safe_addstr(stdscr, start_y + 6, 4, "Press 'R' to re-analyze forensic traces from waf_ledger.db.", curses.color_pair(4))
             return
 
-        header = f" {'TIPO':<16s} {'ID / CLAVE':<28s} {'VEREDICTO GEMELO DIGITAL':<30s} {'ACCIÓN'}"
+        header = f" {'TYPE':<16s} {'ID / KEY':<28s} {'DIGITAL TWIN VERDICT':<30s} {'ACTION'}"
         safe_addstr(stdscr, start_y + 3, 0, header.ljust(max_x), curses.color_pair(4) | curses.A_BOLD)
 
         list_h = min(len(self.advisor_suggestions), 5)
@@ -740,11 +739,11 @@ class ExactorRulesApp:
             skey = sug.get("rule_id", sug.get("island_key", "n/a"))
             sim = sug.get("simulation")
             if sim and sim.get("certified_zero_false_positives"):
-                verdict = f"[0% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} interceptados"
+                verdict = f"[0% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} intercepted"
             else:
-                verdict = "[AUDITADO 0 FP]"
+                verdict = "[AUDITED 0% FP]"
             
-            row_str = f" {stype:<16s} {skey:<28s} {verdict:<30s} [Y] Aprobar / [N] Rechazar"
+            row_str = f" {stype:<16s} {skey:<28s} {verdict:<30s} [Y] Approve / [N] Reject"
             attr = curses.color_pair(7) | curses.A_BOLD if idx == self.selected_advisor_idx else 0
             safe_addstr(stdscr, y, 0, row_str.ljust(max_x), attr)
 
@@ -753,19 +752,19 @@ class ExactorRulesApp:
             sel_sug = self.advisor_suggestions[self.selected_advisor_idx]
             det_y = start_y + 4 + list_h + 1
             safe_addstr(stdscr, det_y, 0, "─" * max_x, curses.color_pair(4))
-            safe_addstr(stdscr, det_y + 1, 2, f"DETALLE DE PROPUESTA SELECCIONADA: {sel_sug.get('action_name')}", curses.color_pair(6) | curses.A_BOLD)
-            safe_addstr(stdscr, det_y + 2, 4, f"Evidencia Forense : {sel_sug.get('evidence', '')[:max_x - 26]}", curses.color_pair(3))
-            safe_addstr(stdscr, det_y + 3, 4, f"Evaluación Riesgo : {sel_sug.get('risk_assessment', '')[:max_x - 26]}", curses.color_pair(1))
-            safe_addstr(stdscr, det_y + 4, 4, f"Impacto en WAF    : {sel_sug.get('impact', '')[:max_x - 26]}", curses.color_pair(4))
+            safe_addstr(stdscr, det_y + 1, 2, f"SELECTED PROPOSAL DETAILS: {sel_sug.get('action_name')}", curses.color_pair(6) | curses.A_BOLD)
+            safe_addstr(stdscr, det_y + 2, 4, f"Forensic Evidence : {sel_sug.get('evidence', '')[:max_x - 26]}", curses.color_pair(3))
+            safe_addstr(stdscr, det_y + 3, 4, f"Risk Assessment   : {sel_sug.get('risk_assessment', '')[:max_x - 26]}", curses.color_pair(1))
+            safe_addstr(stdscr, det_y + 4, 4, f"WAF Impact        : {sel_sug.get('impact', '')[:max_x - 26]}", curses.color_pair(4))
             
             sim = sel_sug.get("simulation")
             if sim and not sim.get("error"):
-                badge = "[✓ CERO FALSOS POSITIVOS CERTIFICADO]" if sim.get("certified_zero_false_positives") else "[ALERTA COLISIÓN]"
-                safe_addstr(stdscr, det_y + 5, 4, f"Gemelo Digital    : {badge} {sim.get('benign_tested', 0)} peticiones benignas probadas.", curses.color_pair(1) | curses.A_BOLD)
+                badge = "[✓ CERTIFIED ZERO FALSE POSITIVES]" if sim.get("certified_zero_false_positives") else "[COLLISION ALERT]"
+                safe_addstr(stdscr, det_y + 5, 4, f"Digital Twin      : {badge} {sim.get('benign_tested', 0)} benign requests tested.", curses.color_pair(1) | curses.A_BOLD)
                 if sim.get("saved_latency_ms", 0) > 0:
-                    safe_addstr(stdscr, det_y + 6, 4, f"Ahorro de Cómputo : ~{sim.get('saved_latency_ms')} ms de CPU ahorrados al descartar antes del SAT.", curses.color_pair(1))
+                    safe_addstr(stdscr, det_y + 6, 4, f"Compute Savings   : ~{sim.get('saved_latency_ms')} ms CPU saved by dropping before SAT evaluation.", curses.color_pair(1))
 
-            safe_addstr(stdscr, det_y + 8, 4, "Acciones: Presione [Y] para APROBAR e Implementar | [N] para RECHAZAR (No-Op) | [R] Re-analizar", curses.color_pair(3) | curses.A_BOLD)
+            safe_addstr(stdscr, det_y + 8, 4, "Actions: Press [Y] to APPROVE & Implement | [N] to REJECT (No-Op) | [R] Re-analyze", curses.color_pair(3) | curses.A_BOLD)
 
     def show_add_rule_dialog(self, stdscr):
         max_y, max_x = stdscr.getmaxyx()
@@ -774,14 +773,14 @@ class ExactorRulesApp:
 
         dialog = curses.newwin(win_h, win_w, top_y, top_x)
         dialog.box()
-        safe_addstr(dialog, 0, 2, " AÑADIR NUEVA REGLA DE NEGOCIO ", curses.color_pair(7) | curses.A_BOLD)
-        safe_addstr(dialog, 2, 4, "ID de la Regla (ej. rule-api-guard):", curses.color_pair(4))
-        safe_addstr(dialog, 4, 4, "Nombre Descriptivo:", curses.color_pair(4))
-        safe_addstr(dialog, 6, 4, "Prefijo de Ruta (ej. /api/v1/):", curses.color_pair(4))
-        safe_addstr(dialog, 8, 4, "Métodos Permitidos (ej. GET,POST o vacío):", curses.color_pair(4))
-        safe_addstr(dialog, 10, 4, "IPs Permitidas Whitelist (separadas por coma):", curses.color_pair(4))
-        safe_addstr(dialog, 12, 4, "Encabezado Obligatorio (ej. X-Tenant-ID o vacío):", curses.color_pair(4))
-        safe_addstr(dialog, 14, 4, "[Enter para Guardar | ESC para Cancelar]", curses.color_pair(3))
+        safe_addstr(dialog, 0, 2, " ADD NEW BUSINESS RULE ", curses.color_pair(7) | curses.A_BOLD)
+        safe_addstr(dialog, 2, 4, "Rule ID (e.g. rule-api-guard):", curses.color_pair(4))
+        safe_addstr(dialog, 4, 4, "Descriptive Name:", curses.color_pair(4))
+        safe_addstr(dialog, 6, 4, "Path Prefix (e.g. /api/v1/):", curses.color_pair(4))
+        safe_addstr(dialog, 8, 4, "Allowed Methods (e.g. GET,POST or empty for all):", curses.color_pair(4))
+        safe_addstr(dialog, 10, 4, "Allowed IP Whitelist (comma-separated or empty):", curses.color_pair(4))
+        safe_addstr(dialog, 12, 4, "Mandatory Header (e.g. X-Tenant-ID or empty):", curses.color_pair(4))
+        safe_addstr(dialog, 14, 4, "[Enter to Save | ESC to Cancel]", curses.color_pair(3))
         dialog.refresh()
 
         curses.echo()
@@ -791,7 +790,7 @@ class ExactorRulesApp:
         if not rid:
             curses.noecho()
             curses.curs_set(0)
-            self.set_status("Creación cancelada: Se requiere un ID de regla.")
+            self.set_status("Creation cancelled: Rule ID required.")
             return
 
         name = dialog.getstr(5, 6, 40).decode("utf-8").strip() or rid
@@ -821,7 +820,7 @@ class ExactorRulesApp:
         
         self.rules = [r for r in self.rules if r.get("id") != rid]
         self.rules.append(new_rule)
-        self.set_status(f"Regla '{rid}' creada exitosamente.")
+        self.set_status(f"Rule '{rid}' created successfully.")
 
     def show_rule_detail_dialog(self, stdscr):
         if not (0 <= self.selected_rule_idx < len(self.rules)):
@@ -834,19 +833,19 @@ class ExactorRulesApp:
 
         dialog = curses.newwin(win_h, win_w, top_y, top_x)
         dialog.box()
-        safe_addstr(dialog, 0, 2, f" DETALLE DE REGLA: {rule.get('id')} ", curses.color_pair(7) | curses.A_BOLD)
+        safe_addstr(dialog, 0, 2, f" RULE DETAILS: {rule.get('id')} ", curses.color_pair(7) | curses.A_BOLD)
         
-        safe_addstr(dialog, 2, 4, f"Nombre          : {rule.get('name')}", curses.color_pair(1))
-        safe_addstr(dialog, 3, 4, f"Prefijo Ruta    : {rule.get('path_prefix')}", curses.color_pair(4))
-        safe_addstr(dialog, 4, 4, f"Estado          : {'ACTIVA' if rule.get('enabled', True) else 'INACTIVA'}", curses.color_pair(1) if rule.get('enabled', True) else curses.color_pair(2))
-        safe_addstr(dialog, 5, 4, f"Métodos Perm.   : {rule.get('allowed_methods') or 'Todos'}", curses.color_pair(4))
-        safe_addstr(dialog, 6, 4, f"Métodos Bloq.   : {rule.get('blocked_methods') or 'Ninguno'}", curses.color_pair(2))
-        safe_addstr(dialog, 7, 4, f"IPs Whitelist   : {rule.get('allowed_ips') or 'Sin restricción'}", curses.color_pair(4))
-        safe_addstr(dialog, 8, 4, f"IPs Blacklist   : {rule.get('blocked_ips') or 'Sin restricción'}", curses.color_pair(2))
-        safe_addstr(dialog, 9, 4, f"Encab. Exigidos : {rule.get('required_headers') or 'Ninguno'}", curses.color_pair(3))
-        safe_addstr(dialog, 10, 4, f"Max Payload (B) : {rule.get('max_body_bytes') or 'Ilimitado'}", curses.color_pair(5))
-        safe_addstr(dialog, 12, 4, "Regla SAT Base  : SAT-BIZ-01 a SAT-BIZ-04 (Evaluación O(1))", curses.color_pair(3))
-        safe_addstr(dialog, 14, 4, "[ Presione cualquier tecla para cerrar ]", curses.color_pair(6) | curses.A_BOLD)
+        safe_addstr(dialog, 2, 4, f"Name            : {rule.get('name')}", curses.color_pair(1))
+        safe_addstr(dialog, 3, 4, f"Path Prefix     : {rule.get('path_prefix')}", curses.color_pair(4))
+        safe_addstr(dialog, 4, 4, f"Status          : {'ACTIVE' if rule.get('enabled', True) else 'INACTIVE'}", curses.color_pair(1) if rule.get('enabled', True) else curses.color_pair(2))
+        safe_addstr(dialog, 5, 4, f"Allowed Methods : {rule.get('allowed_methods') or 'All'}", curses.color_pair(4))
+        safe_addstr(dialog, 6, 4, f"Blocked Methods : {rule.get('blocked_methods') or 'None'}", curses.color_pair(2))
+        safe_addstr(dialog, 7, 4, f"IP Whitelist    : {rule.get('allowed_ips') or 'No restrictions'}", curses.color_pair(4))
+        safe_addstr(dialog, 8, 4, f"IP Blacklist    : {rule.get('blocked_ips') or 'No restrictions'}", curses.color_pair(2))
+        safe_addstr(dialog, 9, 4, f"Required Headers: {rule.get('required_headers') or 'None'}", curses.color_pair(3))
+        safe_addstr(dialog, 10, 4, f"Max Payload (B) : {rule.get('max_body_bytes') or 'Unlimited'}", curses.color_pair(5))
+        safe_addstr(dialog, 12, 4, "Base SAT Rule   : SAT-BIZ-01 to SAT-BIZ-04 (O(1) Evaluation)", curses.color_pair(3))
+        safe_addstr(dialog, 14, 4, "[ Press any key to close ]", curses.color_pair(6) | curses.A_BOLD)
         dialog.refresh()
 
         dialog.getch()
@@ -856,28 +855,28 @@ class ExactorRulesApp:
     # =========================================================================
     def run_cli_fallback(self):
         print("\033[1;36m" + "=" * 78 + "\033[0m")
-        print("\033[1;37m EXACTOR-RULES v0.2.0 — Consola de Control de Reglas WAF\033[0m")
+        print("\033[1;37m GUARDIAN-RULES v0.2.0 — WAF Rule Control Console\033[0m")
         print("\033[1;36m" + "=" * 78 + "\033[0m")
         self.sync_data()
-        print(f"Estado WAF  : \033[1;32m{self.connection_msg}\033[0m" if self.is_connected else f"Estado WAF  : \033[1;31m{self.connection_msg}\033[0m")
+        print(f"WAF Status  : \033[1;32m{self.connection_msg}\033[0m" if self.is_connected else f"WAF Status  : \033[1;31m{self.connection_msg}\033[0m")
         print(f"Config TOML : \033[1;34m{self.config_path}\033[0m")
-        print("\n\033[1;33m(Tip: Para abrir la interfaz interactiva gráfica TUI estilo htop, instale 'pip install windows-curses' o ejecute en Linux/macOS)\033[0m\n")
+        print("\n\033[1;33m(Tip: To open the interactive curses TUI, install 'pip install windows-curses' or run on Linux/macOS)\033[0m\n")
 
         while True:
-            print("\033[1;34mOPCIONES:\033[0m")
-            print("  1. Listar Reglas de Negocio del Cliente")
-            print("  2. Conmutar (Activar/Desactivar) una Regla")
-            print("  3. Añadir Nueva Regla de Negocio")
-            print("  4. Eliminar una Regla")
-            print("  5. Ver y Conmutar Islas de Certeza (WordPress, Exposición, Frameworks)")
-            print("  6. Simular Petición / Inspección SAT")
-            print("  7. AI Advisor Forense (Análisis Multi-Agente & Aprobación)")
-            print("  8. Guardar cambios en waf_config.toml")
-            print("  9. Recargar datos")
-            print("  0. Salir")
+            print("\033[1;34mOPTIONS:\033[0m")
+            print("  1. List Customer Business Rules")
+            print("  2. Toggle (Activate/Deactivate) a Rule")
+            print("  3. Add New Business Rule")
+            print("  4. Delete a Rule")
+            print("  5. View and Toggle Certainty Islands (WordPress, Exposure, Frameworks)")
+            print("  6. Simulate Request / SAT Inspection")
+            print("  7. Forensic AI Advisor (Multi-Agent Analysis & Approval)")
+            print("  8. Save changes to waf_config.toml")
+            print("  9. Reload data")
+            print("  0. Exit")
             
             try:
-                opc = input("\nSeleccione una opción [0-9]: ").strip()
+                opc = input("\nSelect an option [0-9]: ").strip()
             except (KeyboardInterrupt, EOFError):
                 break
 
@@ -899,75 +898,74 @@ class ExactorRulesApp:
                 self._cli_advisor()
             elif opc == "8":
                 self.save_to_toml()
-                print(f"\033[1;32m[OK] Guardado en {self.config_path}\033[0m\n")
+                print(f"\033[1;32m[OK] Saved to {self.config_path}\033[0m\n")
             elif opc == "9":
                 self.sync_data()
-                print("\033[1;32m[OK] Datos sincronizados con el WAF.\033[0m\n")
+                print("\033[1;32m[OK] Data synchronized with WAF.\033[0m\n")
 
     def _cli_advisor(self):
-        print("\n\033[1;36m-- EJECUTANDO AI ADVISOR FORENSE (MULTI-AGENTE) --\033[0m")
+        print("\n\033[1;36m-- RUNNING FORENSIC AI ADVISOR (MULTI-AGENT PIPELINE) --\033[0m")
         self.load_advisor()
         if not self.advisor_suggestions:
-            print("\033[1;32m[OK] No hay sugerencias pendientes. El tráfico está optimizado.\033[0m\n")
+            print("\033[1;32m[OK] No pending suggestions. Traffic is fully optimized.\033[0m\n")
             return
-        print(f"\nSe encontraron {len(self.advisor_suggestions)} propuestas generadas con Gemelo Digital:\n")
+        print(f"\nFound {len(self.advisor_suggestions)} proposals generated with Digital Twin simulation:\n")
         idx = 0
         while idx < len(self.advisor_suggestions):
             sug = self.advisor_suggestions[idx]
             print(f"\033[1;34m[{idx + 1}/{len(self.advisor_suggestions)}] {sug.get('action_name')}\033[0m")
-            print(f"    ID / Clave: {sug.get('rule_id', sug.get('island_key'))}")
-            print(f"    Evidencia : {sug.get('evidence')}")
+            print(f"    ID / Key   : {sug.get('rule_id', sug.get('island_key'))}")
+            print(f"    Evidence   : {sug.get('evidence')}")
             sim = sug.get("simulation")
             if sim and sim.get("certified_zero_false_positives"):
-                print(f"    Simulación: \033[1;32m[0% FP CERTIFICADO]\033[0m {sim.get('attacks_intercepted_at_perimeter', 0)} ataques prevenidos")
-            print(f"    Impacto   : {sug.get('impact')}")
-            resp = input("    ¿Aprobar e implementar? [s/N/q]: ").strip().lower()
-            if resp in ("s", "si", "y", "yes"):
+                print(f"    Simulation : \033[1;32m[0% FP CERTIFIED]\033[0m {sim.get('attacks_intercepted_at_perimeter', 0)} attacks intercepted")
+            print(f"    Impact     : {sug.get('impact')}")
+            resp = input("    Approve and apply? [y/N/q]: ").strip().lower()
+            if resp in ("y", "yes"):
                 self.selected_advisor_idx = idx
                 self.handle_approve_advisor_rule()
-                print("    \033[1;32m[✓ APROBADA] Regla implementada.\033[0m\n")
-                # Do not increment idx because the list shrank
+                print("    \033[1;32m[✓ APPROVED] Rule implemented.\033[0m\n")
             elif resp in ("q", "quit"):
                 break
             else:
                 self.selected_advisor_idx = idx
                 self.handle_reject_advisor_rule()
-                print("    \033[1;35m[RECHAZADA] Descartada (sin cambios).\033[0m\n")
+                print("    \033[1;35m[REJECTED] Dismissed (no changes applied).\033[0m\n")
 
     def _cli_list_rules(self):
-        print(f"\n\033[1;36m{'#':<3s} {'ID':<22s} {'ESTADO':<10s} {'RUTA':<20s} {'METODOS':<20s}\033[0m")
+        print(f"\n\033[1;36m{'#':<3s} {'ID':<22s} {'STATUS':<10s} {'PATH':<20s} {'METHODS':<20s}\033[0m")
         print("-" * 78)
         if not self.rules:
-            print("  (No hay reglas de negocio definidas)")
+            print("  (No business rules defined)")
         for idx, r in enumerate(self.rules, 1):
-            st = "\033[1;32mACTIVA\033[0m" if r.get("enabled", True) else "\033[1;31mINACT.\033[0m"
-            m = ", ".join(r.get("allowed_methods") or ["TODOS"])
+            st = "\033[1;32mACTIVE\033[0m" if r.get("enabled", True) else "\033[1;31mINACT.\033[0m"
+            m = ", ".join(r.get("allowed_methods") or ["ALL"])
             print(f"{idx:<3d} {r.get('id',''):<22s} {st:<18s} {r.get('path_prefix','/'):<20s} {m:<20s}")
         print()
 
     def _cli_toggle_rule(self):
         self._cli_list_rules()
-        rid = input("Ingrese el ID de la regla a conmutar: ").strip()
+        rid = input("Enter Rule ID to toggle: ").strip()
         for r in self.rules:
             if r.get("id") == rid:
                 r["enabled"] = not r.get("enabled", True)
                 if self.is_connected:
                     self.api.save_customer_rule(r)
-                print(f"\033[1;32m[OK] Regla '{rid}' ahora esta {'ACTIVA' if r['enabled'] else 'INACTIVA'}.\033[0m\n")
+                print(f"\033[1;32m[OK] Rule '{rid}' is now {'ACTIVE' if r['enabled'] else 'INACTIVE'}.\033[0m\n")
                 return
-        print("\033[1;31m[X] Regla no encontrada.\033[0m\n")
+        print("\033[1;31m[X] Rule not found.\033[0m\n")
 
     def _cli_add_rule(self):
-        print("\n\033[1;34m-- Anadir Nueva Regla de Negocio --\033[0m")
-        rid = input("ID de la Regla (ej. rule-api-auth): ").strip()
+        print("\n\033[1;34m-- Add New Business Rule --\033[0m")
+        rid = input("Rule ID (e.g. rule-api-auth): ").strip()
         if not rid:
-            print("Cancelado: Se requiere ID.")
+            print("Cancelled: Rule ID required.")
             return
-        name = input("Nombre descriptivo: ").strip() or rid
-        path = input("Prefijo de ruta (ej. /api/v1/): ").strip() or "/"
-        methods_raw = input("Metodos permitidos (separados por coma, ej. GET,POST o vacio para todos): ").strip()
-        ips_raw = input("IPs autorizadas Whitelist (separadas por coma, o vacio): ").strip()
-        hdr_raw = input("Encabezado obligatorio (ej. X-Tenant-ID o vacio): ").strip()
+        name = input("Descriptive name: ").strip() or rid
+        path = input("Path prefix (e.g. /api/v1/): ").strip() or "/"
+        methods_raw = input("Allowed methods (comma-separated, e.g. GET,POST or empty for all): ").strip()
+        ips_raw = input("Allowed IP Whitelist (comma-separated, or empty): ").strip()
+        hdr_raw = input("Mandatory header (e.g. X-Tenant-ID or empty): ").strip()
 
         new_rule = {
             "id": rid,
@@ -985,56 +983,56 @@ class ExactorRulesApp:
             self.api.save_customer_rule(new_rule)
         self.rules = [r for r in self.rules if r.get("id") != rid]
         self.rules.append(new_rule)
-        print(f"\033[1;32m[OK] Regla '{rid}' registrada exitosamente.\033[0m\n")
+        print(f"\033[1;32m[OK] Rule '{rid}' registered successfully.\033[0m\n")
 
     def _cli_delete_rule(self):
         self._cli_list_rules()
-        rid = input("Ingrese el ID de la regla a eliminar: ").strip()
+        rid = input("Enter Rule ID to delete: ").strip()
         for idx, r in enumerate(self.rules):
             if r.get("id") == rid:
-                confirm = input(f"Confirmar eliminacion de '{rid}'? [y/N]: ").strip().lower()
-                if confirm in ("y", "yes", "s", "si"):
+                confirm = input(f"Confirm deletion of '{rid}'? [y/N]: ").strip().lower()
+                if confirm in ("y", "yes"):
                     if self.is_connected:
                         self.api.delete_customer_rule(rid)
                     self.rules.pop(idx)
-                    print(f"\033[1;32m[OK] Regla '{rid}' eliminada.\033[0m\n")
+                    print(f"\033[1;32m[OK] Rule '{rid}' deleted.\033[0m\n")
                 return
-        print("\033[1;31m[X] Regla no encontrada.\033[0m\n")
+        print("\033[1;31m[X] Rule not found.\033[0m\n")
 
     def _cli_islands(self):
-        print("\n\033[1;36m-- ESTADO DE ISLAS DE CERTEZA --\033[0m")
+        print("\n\033[1;36m-- CERTAINTY ISLANDS STATUS --\033[0m")
         for key in ["wordpress_shield", "exposure_shield", "framework_shield"]:
             val = self.islands.get(key, True)
-            st = "\033[1;32m[ ACTIVADA / ESCUDO ON ]\033[0m" if val else "\033[1;31m[ DESACTIVADA / PROBES ON ]\033[0m"
+            st = "\033[1;32m[ ACTIVE / SHIELD ON ]\033[0m" if val else "\033[1;31m[ DISABLED / PROBES ALLOWED ]\033[0m"
             print(f"  * {key:<20s} : {st}")
         
-        print("\nOpciones de conmutacion:")
-        print("  1. Alternar wordpress_shield")
-        print("  2. Alternar exposure_shield")
-        print("  3. Alternar framework_shield")
-        print("  0. Volver")
-        sub = input("Seleccione [0-3]: ").strip()
+        print("\nToggle Options:")
+        print("  1. Toggle wordpress_shield")
+        print("  2. Toggle exposure_shield")
+        print("  3. Toggle framework_shield")
+        print("  0. Back")
+        sub = input("Select [0-3]: ").strip()
         key_map = {"1": "wordpress_shield", "2": "exposure_shield", "3": "framework_shield"}
         if sub in key_map:
             k = key_map[sub]
             self.islands[k] = not self.islands.get(k, True)
             if self.is_connected:
                 self.api.update_islands_config(self.islands)
-            print(f"\033[1;32m[OK] {k} conmutado a {self.islands[k]}.\033[0m\n")
+            print(f"\033[1;32m[OK] {k} toggled to {self.islands[k]}.\033[0m\n")
 
     def _cli_simulator(self):
-        print("\n\033[1;34m-- SIMULADOR DE VERIFICACION SAT EN VIVO --\033[0m")
-        method = input("Metodo HTTP [GET]: ").strip().upper() or "GET"
-        path = input("Ruta / URI Path [/api/v1/test]: ").strip() or "/api/v1/test"
-        body = input("Cuerpo / Body (opcional): ").strip()
+        print("\n\033[1;34m-- LIVE SAT VERIFICATION SIMULATOR --\033[0m")
+        method = input("HTTP Method [GET]: ").strip().upper() or "GET"
+        path = input("Path / URI [/api/v1/test]: ").strip() or "/api/v1/test"
+        body = input("Body payload (optional): ").strip()
 
         if not self.is_connected:
-            print("\033[1;33m[!] WAF Offline. Inicie el servidor para ejecutar verificaciones SAT.\033[0m\n")
+            print("\033[1;33m[!] WAF Offline. Start the Guardian WAF server to run live SAT verifications.\033[0m\n")
             return
 
         ok, res = self.api.inspect_payload(method, path, "", body)
         if not ok:
-            print(f"\033[1;31m[X] Error comunicando con el WAF: {res}\033[0m\n")
+            print(f"\033[1;31m[X] Error communicating with WAF: {res}\033[0m\n")
             return
 
         act = res.get("action", "ALLOW")
@@ -1047,17 +1045,17 @@ class ExactorRulesApp:
         else:
             print(f"\n\033[1;32m[DECISION] ALLOW [{cat}]\033[0m")
 
-        print(f"Latencia SAT : \033[1;32m{lat:.2f} us\033[0m")
-        r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "Ninguna (Trafico Benigno)"
-        print(f"Invariantes  : {r_str}")
-        print(f"Prueba Causal: {res.get('causal_proof', 'N/A')}\n")
+        print(f"SAT Latency  : \033[1;32m{lat:.2f} µs\033[0m")
+        r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "None (Benign Traffic)"
+        print(f"Invariants   : {r_str}")
+        print(f"Causal Proof : {res.get('causal_proof', 'N/A')}\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="EXACTOR-RULES: Administrador TUI/CLI de Reglas e Islas WAF")
-    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"URL del Management API del WAF (por defecto: {DEFAULT_API_URL})")
-    parser.add_argument("--config", default=None, help="Ruta al archivo waf_config.toml")
-    parser.add_argument("--cli", action="store_true", help="Forzar modo consola de texto interactiva en vez de ncurses")
+    parser = argparse.ArgumentParser(description="GUARDIAN-RULES: Interactive TUI/CLI Manager for Guardian WAF Rules and Islands")
+    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"Guardian WAF Management API URL (default: {DEFAULT_API_URL})")
+    parser.add_argument("--config", default=None, help="Path to waf_config.toml configuration file")
+    parser.add_argument("--cli", action="store_true", help="Force interactive CLI mode instead of curses TUI")
     args = parser.parse_args()
 
     app = ExactorRulesApp(api_url=args.api, config_path=args.config)
@@ -1066,7 +1064,7 @@ def main():
         try:
             curses.wrapper(app.run_curses)
         except Exception as e:
-            print(f"\n[EXACTOR-RULES] Error durante la ejecución del TUI: {e}", file=sys.stderr)
+            print(f"\n[GUARDIAN-RULES] Error during TUI execution: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         app.run_cli_fallback()

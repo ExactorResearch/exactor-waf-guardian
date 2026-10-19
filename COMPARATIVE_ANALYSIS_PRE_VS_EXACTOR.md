@@ -1,5 +1,5 @@
 # Technical Comparison: Web Perimeter Security Before vs. With EXACTOR
-### Quantitative, Architectural, and Strategic Analysis: Traditional WAFs (RegEx / ModSecurity) vs. Cloud AI WAFs (LLMs) vs. Envoy SAT WAF (powered by EXACTOR Core)
+### Quantitative, Architectural, and Strategic Analysis: Traditional WAFs (RegEx / ModSecurity) vs. Cloud AI WAFs (LLMs) vs. Guardian WAF (powered by EXACTOR Core)
 
 **Document:** Comparative Technical Report  
 **Publication:** Supplementary Technical White Paper  
@@ -14,7 +14,7 @@ For over two decades, web application perimeter defense has relied on two flawed
 1. **The Era of Regular Expressions (RegEx / ModSecurity / OWASP CRS):** Linear syntactic pattern matching vulnerable to encoding mutations, prone to massive false-positive rates on modern JSON/GraphQL APIs, and susceptible to perimeter CPU exhaustion via ReDoS (*Catastrophic Backtracking*).
 2. **The Era of Cloud Artificial Intelligence WAFs (Cloud LLMs / Heuristic Classifiers):** Context-aware triage crippled by prohibitive network latencies ($350 - 650\text{ ms}$), astronomical recurring API costs ($>\$2,000 / \text{1M reqs}$), and probabilistic non-determinism (hallucinations and lack of auditability).
 
-The **Envoy SAT WAF (powered by EXACTOR Core)** establishes a definitive third path: **formal cybersecurity grounded in Neuro-Symbolic Logic and Boolean Satisfiability (SAT)** directly within the data plane of [Envoy Proxy](file:///d:/proyectos/rush/others/envoy/configs/exactor/envoy-exactor.yaml).
+The **Guardian WAF (powered by EXACTOR Core)** establishes a definitive third path: **formal cybersecurity grounded in Neuro-Symbolic Logic and Boolean Satisfiability (SAT)** directly within the data plane of [Envoy Proxy](file:///d:/proyectos/rush/others/envoy/configs/exactor/envoy-exactor.yaml).
 
 Below is the exhaustive, empirically validated comparison between the state of the art **before EXACTOR** and the modern architecture.
 
@@ -24,7 +24,7 @@ Below is the exhaustive, empirically validated comparison between the state of t
 
 This matrix synthesizes empirical metrics gathered across the formal comparative benchmark suite (documented in [PROOF_OF_CONCEPT.md](PROOF_OF_CONCEPT.md) and validated through the Envoy Proxy integration pipeline):
 
-| Critical Dimension | Traditional WAF (ModSecurity / CRS v3.3) | Cloud AI WAF (Cloudflare AI / AWS) | Envoy SAT WAF (powered by EXACTOR Core) |
+| Critical Dimension | Traditional WAF (ModSecurity / CRS v3.3) | Cloud AI WAF (Cloudflare AI / AWS) | Guardian WAF (powered by EXACTOR Core) |
 | :--- | :---: | :---: | :---: |
 | **Computational Paradigm** | Pattern matching via RegEx | Probabilistic statistical inference | **Exact Propositional Logic & SAT (AST)** |
 | **Inference Latency** | $1.5\text{ ms} - 50.0\text{ ms}$ (degrades on large payloads) | $350\text{ ms} - 650\text{ ms}$ (unacceptable on data plane) | **$17.3\,\mu\text{s}$ (Core) / $123.2\,\mu\text{s}$ (HTTP ext_authz)** |
@@ -83,7 +83,7 @@ This matrix synthesizes empirical metrics gathered across the formal comparative
 
 ## 3. Forensic Traceability and Regulatory Compliance
 
-| Compliance Aspect | Before EXACTOR (Traditional WAF) | With Envoy SAT WAF (EXACTOR) |
+| Compliance Aspect | Before EXACTOR (Traditional WAF) | With Guardian WAF (EXACTOR) |
 | :--- | :--- | :--- |
 | **Decision Header** | None or opaque numeric code | `x-exactor-verdict: ALLOW / DENY`<br>`x-exactor-latency-us: 123.2`<br>`x-exactor-proof-ref: proof-uuid` |
 | **Rejection Payload** | Generic HTML error 403 with no causal justification | Structured JSON response detailing formal cause: `{"error": "Forbidden by Envoy Security Policy", "category": "sql_injection", "rule": "ISLAND-SQLI"}` |
@@ -94,11 +94,11 @@ This matrix synthesizes empirical metrics gathered across the formal comparative
 
 ## 4. Conclusion
 
-| Criterion | The Pre-EXACTOR Era (RegEx / ModSecurity) | The EXACTOR Era (Envoy SAT WAF) |
+| Criterion | The Pre-EXACTOR Era (RegEx / ModSecurity) | The EXACTOR Era (Guardian WAF) |
 | :--- | :--- | :--- |
 | **Philosophy** | *Heuristic string matching and approximations.* | *Formal mathematical theorem proving.* |
 | **Fault Tolerance** | Breaks modern APIs or gets disabled due to false positives. | Zero false positives in production under strict blocking mode. |
 | **Speed** | Millisecond overhead that degrades API gateways. | Microsecond-native execution at hardware line speed. |
 | **Maintenance** | Manual, reactive, craft-like tuning of regex rule sets. | Autonomous Boolean algebra minimization in the cloud. |
 
-Replacing legacy regular expressions with the **Envoy SAT WAF** represents an architectural paradigm shift: moving from **probabilistic, fragile pattern approximations** to **formally guaranteed, deterministic cybersecurity**.
+Replacing legacy regular expressions with **Guardian WAF** represents an architectural paradigm shift: moving from **probabilistic, fragile pattern approximations** to **formally guaranteed, deterministic cybersecurity**.

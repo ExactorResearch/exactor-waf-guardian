@@ -1,6 +1,6 @@
-"""Exactor WAF SAT & Constraint Propagation Engine - Certainty Islands Architecture.
+"""Guardian WAF SAT & Constraint Propagation Engine - Certainty Islands Architecture.
 
-Deterministic, sub-millisecond Boolean SAT solver with formal 'Islas de Certeza' (Certainty Islands).
+Deterministic, sub-millisecond Boolean SAT solver with formal Certainty Islands.
 Evaluates formal grammar invariants, guarantees 100% accuracy on attack grammars with 0% false positives on benign traffic,
 and outputs mathematically provable deduction proofs in LaTeX.
 """
@@ -16,7 +16,7 @@ from exactor_waf.core.payload import HTTPRequestPayload, AttackCategory, AttackD
 
 @dataclass
 class CertaintyIsland:
-    """An Island of Certainty (Isla de Certeza) in the AST invariant space."""
+    """An Island of Certainty in the AST invariant space."""
     island_id: str
     name: str
     category: AttackCategory
@@ -51,7 +51,7 @@ class SATProofChain:
 
 
 class ExactorWAFSATEngine:
-    """Deterministic Neuro-Symbolic & SAT Constraint Engine with Certainty Islands (Islas de Certeza).
+    """Deterministic Neuro-Symbolic & SAT Constraint Engine with Certainty Islands.
     
     Operates in < 20 microseconds without neural network hallucination or regex backtracking.
     """

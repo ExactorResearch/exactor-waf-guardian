@@ -26,7 +26,7 @@ use tracing_subscriber::EnvFilter;
     name = "exactor-waf-guardian",
     author = "Exactor Team",
     version = env!("CARGO_PKG_VERSION"),
-    about = "Production-grade, sub-millisecond SAT Web Application Firewall (WAF) & Reverse Proxy powered by EXACTOR Core and exactor.tech"
+    about = "Guardian WAF: Production-grade, sub-millisecond SAT Web Application Firewall & Reverse Proxy powered by EXACTOR Core and exactor.tech"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -200,12 +200,12 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
   ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
   ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-             WAF GUARDIAN - SERVER COMPONENT
+            GUARDIAN WAF - SERVER COMPONENT
       Powered by EXACTOR Core & https://exactor.tech
     "#
     );
 
-    info!(target: "exactor::server", "Starting Exactor WAF Guardian Server v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::server", "Starting Guardian WAF Server v{}", env!("CARGO_PKG_VERSION"));
     info!(target: "exactor::server", "Listen Address : {}", config.listen_addr);
     info!(target: "exactor::server", "Upstream Target: {}", config.upstream_url);
     info!(target: "exactor::server", "Defense Mode   : {}", config.mode.to_uppercase());
@@ -352,7 +352,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
 
     let addr: SocketAddr = config.listen_addr.parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!(target: "exactor::server", "Exactor WAF Guardian Server ready and listening on http://{}", addr);
+    info!(target: "exactor::server", "Guardian WAF Server ready and listening on http://{}", addr);
 
     axum::serve(
         listener,
@@ -383,7 +383,7 @@ async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error:
         .clone()
         .unwrap_or_else(|| "0.0.0.0:8000".to_string());
 
-    info!(target: "exactor::t1k", "Starting Exactor T1K Acceleration Co-Processor v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::t1k", "Starting Guardian WAF T1K Acceleration Co-Processor v{}", env!("CARGO_PKG_VERSION"));
     info!(target: "exactor::t1k", "T1K Listen Address : {}", t1k_addr);
     info!(target: "exactor::t1k", "Defense Mode       : {}", config.mode.to_uppercase());
     if let Some(ref ds) = config.t1k_downstream_addr {
@@ -442,7 +442,7 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
     let engine = ExactorSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
     let proof = engine.evaluate_payload(&payload);
 
-    println!("\n🔍 Exactor WAF Guardian: Payload Inspection Report");
+    println!("\n🔍 Guardian WAF: Payload Inspection Report");
     println!("============================================================");
     println!("Request ID       : {}", proof.request_id);
     println!("Target Path      : {}", payload.path);
@@ -464,7 +464,7 @@ async fn run_sync_simplify(
     config: &WafConfig,
     limit: i64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("⚡ Exactor WAF: Initiating Exact Boolean Simplification");
+    println!("⚡ Guardian WAF: Initiating Exact Boolean Simplification");
     println!("   Target: {}", config.exactor_api_url);
 
     let ledger = SqliteLedger::init(&config.database_path).await?;
@@ -516,7 +516,7 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
   ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
   ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-             WAF GUARDIAN - ENVOY EXT_AUTHZ SERVICE
+            GUARDIAN WAF - ENVOY EXT_AUTHZ SERVICE
       Powered by EXACTOR Core & https://exactor.tech
     "#
     );
@@ -526,7 +526,7 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
         .clone()
         .unwrap_or_else(|| "0.0.0.0:9002".to_string());
 
-    info!(target: "exactor::envoy", "Starting Exactor Envoy ext_authz Service v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "exactor::envoy", "Starting Guardian WAF Envoy ext_authz Service v{}", env!("CARGO_PKG_VERSION"));
     info!(target: "exactor::envoy", "ext_authz Listen Address: {}", listen_addr);
     info!(target: "exactor::envoy", "Defense Mode            : {}", config.mode.to_uppercase());
     info!(target: "exactor::envoy", "Cloud API URL           : {}", config.exactor_api_url);
@@ -562,7 +562,7 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
 
     let addr: SocketAddr = listen_addr.parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!(target: "exactor::envoy", "Exactor Envoy ext_authz listening on http://{}", addr);
+    info!(target: "exactor::envoy", "Guardian WAF Envoy ext_authz listening on http://{}", addr);
 
     axum::serve(
         listener,

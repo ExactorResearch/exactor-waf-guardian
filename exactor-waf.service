@@ -1,5 +1,5 @@
 [Unit]
-Description=Exactor WAF Guardian - Deterministic SAT Cyber-Defense Proxy
+Description=Guardian WAF - Deterministic SAT Cyber-Defense Proxy
 Documentation=https://github.com/ExactorResearch/exactor-waf-guardian
 After=network.target network-online.target
 Wants=network-online.target

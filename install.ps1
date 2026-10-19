@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Exactor WAF Guardian - Zero-Dependency Windows Automated Installer
+    Guardian WAF - Zero-Dependency Windows Automated Installer
     Installs the standalone precompiled binary, default configuration, and registers as a Windows Service.
     Requires NO external dependencies, NO Rust, and NO compilers on the target machine.
 #>
@@ -18,7 +18,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "Exactor WAF Guardian - Windows Server Installer" -ForegroundColor Cyan
+Write-Host "Guardian WAF - Windows Server Installer" -ForegroundColor Cyan
 Write-Host "Deterministic SAT Cyber-Defense and Reverse Proxy" -ForegroundColor Cyan
 Write-Host "Zero-Dependency Deployment Mode" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
@@ -159,7 +159,7 @@ Write-Host "`n[5/5] Service and Launch Registration..." -ForegroundColor Yellow
 if ($AsService) {
     $BinPathWithArgs = "`"$TargetExe`" proxy --config `"$TargetConfig`""
     if (-not $existingSvc) {
-        & sc.exe create $ServiceName binPath= $BinPathWithArgs start= auto DisplayName= "Exactor WAF Guardian" | Out-Null
+        & sc.exe create $ServiceName binPath= $BinPathWithArgs start= auto DisplayName= "Guardian WAF" | Out-Null
         & sc.exe description $ServiceName "Deterministic SAT Cyber-Defense WAF and Reverse Proxy powered by EXACTOR Core and exactor.tech" | Out-Null
         Write-Host "Registered Windows Service '$ServiceName' (auto-start)." -ForegroundColor Green
     } else {
@@ -182,8 +182,8 @@ if ($AsService) {
 # Create a convenient run-interactive.bat in the install folder
 $BatLines = @(
     '@echo off',
-    'title Exactor WAF Guardian - Interactive Console',
-    'echo Starting Exactor WAF Guardian...',
+    'title Guardian WAF - Interactive Console',
+    'echo Starting Guardian WAF...',
     "`"$TargetExe`" proxy --config `"$TargetConfig`"",
     'pause'
 )
@@ -191,7 +191,7 @@ $BatContent = $BatLines -join "`r`n"
 Set-Content -Path "$InstallDir\run-interactive.bat" -Value $BatContent -Encoding ascii
 
 Write-Host "`n============================================================" -ForegroundColor Green
-Write-Host "Exactor WAF Guardian successfully installed!" -ForegroundColor Green
+Write-Host "Guardian WAF successfully installed!" -ForegroundColor Green
 Write-Host "   Executable    : $TargetExe" -ForegroundColor Cyan
 Write-Host "   Configuration : $TargetConfig" -ForegroundColor Cyan
 Write-Host "   Service       : $ServiceName (Automatic)" -ForegroundColor Cyan

@@ -148,7 +148,7 @@ impl HttpRequestPayload {
     }
 }
 
-/// A formal domain in the AST invariant space (Isla de Certeza).
+/// A formal domain in the AST invariant space (Certainty Island).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CertaintyIsland {
     pub island_id: String,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Exactor WAF Guardian - Linux Server Uninstaller
+# Guardian WAF - Linux Server Uninstaller
 # ==============================================================================
 
 set -euo pipefail
@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${RED}============================================================${NC}"
-echo -e "${RED}🛡️  Uninstalling Exactor WAF Guardian${NC}"
+echo -e "${RED}🛡️  Uninstalling Guardian WAF${NC}"
 echo -e "${RED}============================================================${NC}"
 
 if [[ $EUID -ne 0 ]]; then
@@ -61,4 +61,4 @@ else
     echo -e "   (To remove completely, delete /etc/exactor or run ./uninstall.sh --purge)"
 fi
 
-echo -e "\n${GREEN}✅ Exactor WAF Guardian uninstalled successfully.${NC}"
+echo -e "\n${GREEN}✅ Guardian WAF uninstalled successfully.${NC}"

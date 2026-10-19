@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
- EXACTOR-TOP: Monitor Interactivo en Tiempo Real para EXACTOR WAF Guardian
- Inspirado en htop/btop — Métricas, Latencia Sub-Milisegundo y Registro Forense
+ GUARDIAN-TOP: Real-Time Interactive Monitor for Guardian WAF
+ Inspired by htop/btop — Metrics, Sub-Millisecond Latency, and Forensic Ledger
 ===============================================================================
 """
 
@@ -14,7 +14,7 @@ import sqlite3
 import argparse
 from datetime import datetime
 
-# Reducir retraso de tecla ESC para respuesta instantánea en ncurses
+# Reduce ESC key delay for instantaneous response in ncurses
 os.environ.setdefault("ESCDELAY", "25")
 
 DEFAULT_DB_PATHS = [
@@ -43,8 +43,8 @@ def get_db_connection(db_path):
 
 def safe_addstr(stdscr, y, x, text, attr=0):
     """
-    Escribe texto de manera segura en curses sin exceder límites de pantalla
-    ni escribir en la esquina inferior derecha (max_y - 1, max_x - 1) que lanza ERR.
+    Safely writes text in curses without exceeding screen boundaries
+    or writing to bottom-right corner (max_y - 1, max_x - 1) which throws ERR.
     """
     try:
         max_y, max_x = stdscr.getmaxyx()
@@ -52,7 +52,7 @@ def safe_addstr(stdscr, y, x, text, attr=0):
             return
         avail = max_x - x
         if y == max_y - 1:
-            avail -= 1  # Evita el desbordamiento automático en la última celda de curses
+            avail -= 1  # Avoids automatic overflow on the last cell in curses
         if avail <= 0:
             return
         stdscr.addstr(y, x, str(text)[:avail], attr)
@@ -200,7 +200,7 @@ class ExactorTop:
         except Exception:
             pass
 
-        # Habilitar captura de teclas especiales y ratón
+        # Enable special keys and mouse capture
         stdscr.keypad(True)
         stdscr.nodelay(True)
         stdscr.timeout(int(self.refresh_rate * 1000))
@@ -210,7 +210,7 @@ class ExactorTop:
         except Exception:
             pass
 
-        # Esquema de color optimizado estilo htop
+        # Color palette optimized for htop style
         curses.start_color()
         try:
             curses.use_default_colors()
@@ -245,9 +245,9 @@ class ExactorTop:
             max_y, max_x = stdscr.getmaxyx()
             stdscr.erase()
 
-            # Protección para terminales pequeñas
+            # Small terminal protection
             if max_y < 10 or max_x < 50:
-                safe_addstr(stdscr, 0, 0, "Ventana demasiado pequeña. Redimensiona la terminal.", curses.color_pair(3) | curses.A_BOLD)
+                safe_addstr(stdscr, 0, 0, "Window too small. Please resize terminal.", curses.color_pair(3) | curses.A_BOLD)
                 try:
                     stdscr.refresh()
                 except curses.error:
@@ -256,16 +256,16 @@ class ExactorTop:
                 continue
 
             # --- TOP HEADER ---
-            title = " EXACTOR-TOP :: HIGH-PERFORMANCE WAF MONITOR & FORMAL PROOF AUDITOR "
+            title = " GUARDIAN-TOP :: HIGH-PERFORMANCE WAF MONITOR & FORMAL PROOF AUDITOR "
             safe_addstr(stdscr, 0, 0, title, curses.color_pair(7) | curses.A_BOLD)
             status_line = f" [DB: {os.path.basename(self.db_path)}] [Filter: {self.filter_mode}] [Rate: {self.refresh_rate:.1f}s] {'[PAUSED]' if self.paused else '[LIVE]'}"
             if len(title) + len(status_line) < max_x:
                 safe_addstr(stdscr, 0, max_x - len(status_line), status_line, curses.color_pair(7))
 
-            # --- METRICS & GAUGES SECTION (Líneas 2 a 8) ---
+            # --- METRICS & GAUGES SECTION (Lines 2 to 8) ---
             col_mid = max(30, max_x // 2)
 
-            # Columna Izquierda: Throughput y Rendimiento
+            # Left Column: Throughput and Performance
             allowed_pct = (stats.get("allowed", 0) / stats["total"] * 100.0) if stats.get("total", 0) > 0 else 0.0
             block_pct = stats.get("block_rate", 0.0)
 
@@ -278,7 +278,7 @@ class ExactorTop:
             lat_max_str = f"Max: {stats.get('max_latency', 0.0):6.1f}µs"
             safe_addstr(stdscr, 5, 2, f"Latency: {lat_avg_str}  {lat_p95_str}  {lat_max_str}", curses.color_pair(4) | curses.A_BOLD)
 
-            # Columna Derecha: Contadores, Categorías de Amenazas y Nube
+            # Right Column: Counters, Threat Categories and Cloud
             if col_mid < max_x - 10:
                 safe_addstr(stdscr, 2, col_mid, f"Total: {stats.get('total', 0):,} | Block: {stats.get('blocked', 0):,} | Allow: {stats.get('allowed', 0):,}", curses.color_pair(1) | curses.A_BOLD)
 
@@ -294,15 +294,15 @@ class ExactorTop:
                     simp_str = f"Cloud Synth: {simp['reduction']:.1f}% reduction ({simp['original']}->{simp['new']})"
                     safe_addstr(stdscr, 5, col_mid, simp_str, curses.color_pair(4))
 
-            # Separador horizontal
+            # Horizontal separator
             safe_addstr(stdscr, 7, 0, "─" * (max_x - 1), curses.color_pair(1))
 
-            # --- TABLE HEADER (Línea 8) con indicador de posición de Scroll ---
+            # --- TABLE HEADER (Line 8) with Scroll position indicator ---
             row_y = 9
             table_height = max(1, max_y - row_y - 2)
             total_records = len(self.records_cache)
 
-            # Cálculos del Viewport Dinámico (Scroll)
+            # Dynamic Viewport Calculations (Scroll)
             if total_records > 0:
                 self.selected_idx = max(0, min(self.selected_idx, total_records - 1))
                 if self.selected_idx < self.scroll_offset:
@@ -322,7 +322,7 @@ class ExactorTop:
             if len(hdr) + len(pos_str) < max_x:
                 safe_addstr(stdscr, 8, max_x - len(pos_str), pos_str, curses.color_pair(10) | curses.A_BOLD)
 
-            # --- REQUEST LOG FEED (Línea 9 en adelante) CON VIEWPORT SCROLL ---
+            # --- REQUEST LOG FEED (Line 9 onwards) WITH VIEWPORT SCROLL ---
             visible_records = self.records_cache[self.scroll_offset : self.scroll_offset + table_height]
 
             for i, rec in enumerate(visible_records):
@@ -340,7 +340,7 @@ class ExactorTop:
 
                 is_selected = (actual_idx == self.selected_idx)
                 
-                # Resaltar colores según veredicto
+                # Highlight colors based on verdict
                 if act == "BLOCK":
                     attr = curses.color_pair(8) if is_selected else curses.color_pair(3) | curses.A_BOLD
                 else:
@@ -348,7 +348,7 @@ class ExactorTop:
 
                 safe_addstr(stdscr, row_y + i, 0, line, attr)
 
-            # --- MODAL DE DETALLE (Si se presiona Enter o 'd') CON SCROLL INTERNO ---
+            # --- DETAIL MODAL (If Enter or 'd' is pressed) WITH INTERNAL SCROLL ---
             if self.show_detail and self.records_cache and self.selected_idx < len(self.records_cache):
                 rec = self.records_cache[self.selected_idx]
                 box_h = min(22, max(6, max_y - 4))
@@ -356,18 +356,18 @@ class ExactorTop:
                 box_y = max(2, (max_y - box_h) // 2)
                 box_x = max(2, (max_x - box_w) // 2)
 
-                # Fondo del Modal
+                # Modal background
                 for by in range(box_y, box_y + box_h):
                     safe_addstr(stdscr, by, box_x, " " * (box_w - 1), curses.color_pair(10))
                 
                 safe_addstr(stdscr, box_y, box_x + 2, f" FORMAL CAUSAL PROOF AUDIT :: [{rec['request_id']}] ", curses.color_pair(10) | curses.A_BOLD)
                 safe_addstr(stdscr, box_y + 2, box_x + 2, f"Client IP : {rec['client_ip']}  |  Timestamp: {rec['timestamp']}", curses.color_pair(10))
                 safe_addstr(stdscr, box_y + 3, box_x + 2, f"Endpoint  : {rec['method']} {rec['path']}", curses.color_pair(10))
-                safe_addstr(stdscr, box_y + 4, box_x + 2, f"Veredict  : {rec['action']}  |  Category: {rec['category']}  |  Latency: {rec['latency_us']:.2f} µs", curses.color_pair(10) | curses.A_BOLD)
+                safe_addstr(stdscr, box_y + 4, box_x + 2, f"Verdict   : {rec['action']}  |  Category: {rec['category']}  |  Latency: {rec['latency_us']:.2f} µs", curses.color_pair(10) | curses.A_BOLD)
                 safe_addstr(stdscr, box_y + 5, box_x + 2, f"Rule ID   : {rec['matched_rules']}", curses.color_pair(10) | curses.A_BOLD)
                 safe_addstr(stdscr, box_y + 6, box_x + 2, "─" * max(0, box_w - 4), curses.color_pair(10))
                 
-                # Causal Proof Box con scroll
+                # Causal Proof Box with scroll
                 proof_text = rec["causal_proof"] or "No proof attached (legitimate traffic passing SIMD invariants)."
                 proof_lines = proof_text.splitlines()
                 max_lines = max(1, box_h - 9)
@@ -379,7 +379,7 @@ class ExactorTop:
                     safe_addstr(stdscr, box_y + 7 + py, box_x + 2, pl[:max(0, box_w - 4)], curses.color_pair(10))
 
                 scroll_hint = f" [{self.modal_scroll_offset + 1}-{min(len(proof_lines), self.modal_scroll_offset + max_lines)}/{len(proof_lines)}] " if len(proof_lines) > max_lines else ""
-                close_hint = f" [ESC / Enter] Cerrar Detalle {scroll_hint}"
+                close_hint = f" [ESC / Enter] Close Detail {scroll_hint}"
                 safe_addstr(stdscr, box_y + box_h - 1, box_x + 2, close_hint, curses.color_pair(7) | curses.A_BOLD)
 
             # --- BOTTOM TOOLBAR (htop style) ---
@@ -393,7 +393,7 @@ class ExactorTop:
                 ("r", "Refresh"),
                 ("+/-", "Speed"),
             ]
-            # Limpiar barra inferior sin tocar la última columna (evita _curses.error en max_y-1, max_x-1)
+            # Clear bottom toolbar without touching last cell
             safe_addstr(stdscr, bar_y, 0, " " * (max_x - 1), curses.color_pair(7))
             cur_x = 1
             for k, desc in f_keys:
@@ -411,7 +411,7 @@ class ExactorTop:
             except curses.error:
                 pass
 
-            # --- INPUT HANDLING CON SOPORTE COMPLETO DE SCROLL ---
+            # --- INPUT HANDLING WITH COMPLETE SCROLL SUPPORT ---
             try:
                 ch = stdscr.getch()
             except Exception:
@@ -420,7 +420,7 @@ class ExactorTop:
             if ch == -1:
                 pass
             elif self.show_detail:
-                # Navegación dentro del modal
+                # Navigation within modal
                 if ch in (curses.KEY_UP, ord('k')):
                     if self.modal_scroll_offset > 0:
                         self.modal_scroll_offset -= 1
@@ -451,10 +451,10 @@ class ExactorTop:
                 elif ch in (curses.KEY_DOWN, ord('j')):
                     if self.selected_idx < total_recs - 1:
                         self.selected_idx += 1
-                elif ch in (curses.KEY_PPAGE, 21):  # PgUp o Ctrl+U
+                elif ch in (curses.KEY_PPAGE, 21):  # PgUp or Ctrl+U
                     page_step = max(1, table_height - 1)
                     self.selected_idx = max(0, self.selected_idx - page_step)
-                elif ch in (curses.KEY_NPAGE, 4):   # PgDn o Ctrl+D
+                elif ch in (curses.KEY_NPAGE, 4):   # PgDn or Ctrl+D
                     page_step = max(1, table_height - 1)
                     if total_recs > 0:
                         self.selected_idx = min(total_recs - 1, self.selected_idx + page_step)
@@ -463,7 +463,7 @@ class ExactorTop:
                 elif ch in (curses.KEY_END, ord('G')):
                     if total_recs > 0:
                         self.selected_idx = total_recs - 1
-                elif ch in (10, 13, ord('d'), ord('D')):  # Enter o 'd'
+                elif ch in (10, 13, ord('d'), ord('D')):  # Enter or 'd'
                     if total_recs > 0:
                         self.show_detail = not self.show_detail
                         self.modal_scroll_offset = 0
@@ -476,7 +476,7 @@ class ExactorTop:
                 elif ch == curses.KEY_MOUSE:
                     try:
                         _, _, _, _, bstate = curses.getmouse()
-                        # Soporte para rueda del ratón hacia arriba y abajo
+                        # Mouse wheel up / down support
                         if bstate & getattr(curses, "BUTTON4_PRESSED", 0x80000) or bstate & 0x10000:
                             self.selected_idx = max(0, self.selected_idx - 3)
                         elif bstate & getattr(curses, "BUTTON5_PRESSED", 0x800000) or bstate & 0x200000:
@@ -487,38 +487,38 @@ class ExactorTop:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="EXACTOR-TOP: Monitor Interactivo en Tiempo Real para EXACTOR WAF Guardian",
+        description="GUARDIAN-TOP: Real-Time Interactive Monitor for Guardian WAF",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "--db",
         "-d",
-        help="Ruta al archivo SQLite de base de datos (waf_ledger.db)",
+        help="Path to SQLite audit ledger database file (waf_ledger.db)",
         default=None,
     )
     parser.add_argument(
         "--rate",
         "-r",
         type=float,
-        help="Intervalo de actualización en segundos",
+        help="Refresh interval in seconds",
         default=1.0,
     )
     parser.add_argument(
         "--blocks-only",
         "-b",
         action="store_true",
-        help="Iniciar mostrando únicamente peticiones bloqueadas",
+        help="Start by displaying only blocked requests",
     )
     args = parser.parse_args()
 
     db_path = find_database(args.db)
     if not db_path:
-        print("\n❌ Error: No se encontró la base de datos de auditoría de EXACTOR WAF (waf_ledger.db).")
-        print("   Rutas buscadas:")
+        print("\n❌ Error: Guardian WAF audit ledger database (waf_ledger.db) not found.")
+        print("   Searched paths:")
         for p in DEFAULT_DB_PATHS:
             print(f"     • {p}")
-        print("\n   Especifica la ruta explícita con:")
-        print("     exactor-top --db /var/lib/exactor/waf_ledger.db\n")
+        print("\n   Specify the explicit path with:")
+        print("     guardian-top --db /var/lib/exactor/waf_ledger.db\n")
         sys.exit(1)
 
     app = ExactorTop(db_path, refresh_rate=args.rate)
@@ -530,7 +530,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        print("\n[EXACTOR-TOP] Monitor finalizado. El WAF continúa operando en segundo plano.")
+        print("\n[GUARDIAN-TOP] Monitor terminated. Guardian WAF continues running in the background.")
 
 if __name__ == "__main__":
     main()

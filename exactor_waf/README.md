@@ -1,6 +1,6 @@
-# Exactor WAF Guardian: Python Proof of Concept (PoC)
+# Guardian WAF: Python Proof of Concept (PoC)
 
-This directory contains the Python reference implementation and interactive demonstration suite of the **Exactor WAF Guardian**.
+This directory contains the Python reference implementation and interactive demonstration suite of the **Guardian WAF**.
 
 ## Quick Start
 

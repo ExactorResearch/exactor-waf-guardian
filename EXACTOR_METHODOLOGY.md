@@ -20,7 +20,7 @@ $$\mathcal{T}(\mathcal{R}) = \text{Lexer}(\text{Normalize}(\mathcal{P} \cup \mat
 Where $\text{Normalize}(\cdot)$ performs multi-pass recursive decoding over percent-encoding, hexadecimal escapes, and SQL comment stripping ($/\*\dots\*/ \to \epsilon$).
 
 ### 1.2 The Master WAF Propositional Invariant
-Let $\mathcal{C}_{\text{WAF}}$ be the conjunction of security invariants across all formal **Certainty Islands (Islas de Certeza)**:
+Let $\mathcal{C}_{\text{WAF}}$ be the conjunction of security invariants across all formal **Certainty Islands**:
 $$\mathcal{C}_{\text{WAF}} = \bigwedge_{k \in \mathcal{K}} \mathcal{C}_k = \mathcal{C}_{\text{SQLi}} \land \mathcal{C}_{\text{XSS}} \land \mathcal{C}_{\text{RCE}} \land \mathcal{C}_{\text{LFI}} \land \mathcal{C}_{\text{SSRF}} \land \mathcal{C}_{\text{GraphQL}} \land \mathcal{C}_{\text{Proto}} \land \mathcal{C}_{\text{gRPC}} \land \mathcal{C}_{\text{JWT}} \land \mathcal{C}_{\text{Stateful}}$$
 
 Each invariant clause $\mathcal{C}_k$ is expressed as a rigorous Boolean proposition:

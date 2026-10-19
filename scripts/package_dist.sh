@@ -75,38 +75,38 @@ cp "${PROJECT_ROOT}/exactor-waf.service" "${STAGING_DIR}/exactor-waf.service"
 # 4. Generate README_INSTALL.txt
 cat << EOF > "${STAGING_DIR}/README_INSTALL.txt"
 ================================================================================
-  EXACTOR WAF GUARDIAN - ZERO-DEPENDENCY CLIENT INSTALLATION PACKAGE
+  GUARDIAN WAF - ZERO-DEPENDENCY CLIENT INSTALLATION PACKAGE
   Deterministic SAT Cyber-Defense & Sub-millisecond Reverse Proxy
   Powered by EXACTOR Core & https://exactor.tech
 ================================================================================
 
-Este paquete es 100% autocontenido. El cliente NO necesita tener instalado Rust,
-Cargo, Python, GCC, Make ni ninguna otra dependencia en su servidor Linux.
+This package is 100% self-contained. The client does NOT need Rust,
+Cargo, Python, GCC, Make, or any other dependency installed on their Linux server.
 
-OPCION A: INSTALACION AUTOMATICA CON SYSTEMD (RECOMENDADA)
+OPTION A: AUTOMATIC INSTALLATION WITH SYSTEMD (RECOMMENDED)
 --------------------------------------------------------------------------------
-1. Extraiga el archivo comprimido y entre a la carpeta:
+1. Extract the compressed archive and enter the folder:
      tar -xzf exactor-waf-guardian-${VERSION}-${TARGET_NAME}.tar.gz
      cd exactor-waf-guardian-${VERSION}-${TARGET_NAME}
-2. Ejecute el instalador como root:
+2. Run the installer as root:
      sudo ./install.sh
 
-   El instalador hara automaticamente:
-   - Instalar el binario precompilado en /usr/local/bin/exactor-waf-guardian
-   - Crear la configuracion en /etc/exactor/waf_config.toml
-   - Registrar e iniciar el servicio systemd "exactor-waf.service"
+   The installer will automatically:
+   - Install the precompiled binary to /usr/local/bin/exactor-waf-guardian
+   - Create configuration at /etc/exactor/waf_config.toml
+   - Register and start the systemd service "exactor-waf.service"
 
-OPCION B: EJECUCION PORTABLE (SIN INSTALAR)
+OPTION B: PORTABLE EXECUTION (WITHOUT INSTALLING)
 --------------------------------------------------------------------------------
-Si solo desea probar el firewall sin tocar rutas del sistema:
-1. Ejecute directamente el binario:
+If you only wish to test the firewall without modifying system paths:
+1. Run the binary directly:
      ./exactor-waf-guardian proxy --config ./waf_config.toml
-2. Probar inspeccion formal de un payload:
+2. Test formal payload inspection:
      ./exactor-waf-guardian inspect --query "id=1' OR 1=1--"
 
-DESINSTALACION LIMPIA:
+CLEAN UNINSTALLATION:
 --------------------------------------------------------------------------------
-Para remover completamente el servicio y binario:
+To completely remove the service and binary:
    sudo ./uninstall.sh
 ================================================================================
 EOF

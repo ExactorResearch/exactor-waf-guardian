@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
- EXACTOR-ADVISOR: Sistema Multi-Agente Autónomo de Análisis Forense y 
- Generación de Reglas de Negocio con Aprobación Humana (Human-in-the-Loop)
+ GUARDIAN-ADVISOR: Autonomous Multi-Agent Forensic Analysis & 
+ Business Rule Synthesis System with Human-in-the-Loop Governance
 ===============================================================================
- Arquitectura de Agentes Especializados:
-   1. TrafficPatternAgent   : Forense y clustering de trazas (SQLite / audit_log)
-   2. SimulationAgent       : Gemelo digital y verificación formal de 0% FP
-   3. RuleSynthesizerAgent  : Síntesis de reglas O(1) y optimizaciones hardware
-   4. HumanApprovalAgent    : Gobernanza interactiva y aplicación en caliente
-   5. ForensicReportAgent   : Generador de reportes ejecutivos HTML y Markdown
+ Specialized Agent Architecture:
+   1. TrafficPatternAgent   : Forensic analysis and trace clustering (SQLite / audit_log)
+   2. SimulationAgent       : Digital twin simulation and 0% FP formal verification
+   3. RuleSynthesizerAgent  : O(1) rule synthesis and hardware optimization
+   4. HumanApprovalAgent    : Interactive governance and hot rule application
+   5. ForensicReportAgent   : Executive HTML and Markdown report generator
 ===============================================================================
 """
 
@@ -66,7 +66,7 @@ class WafApiClient:
 
     def check_health(self):
         try:
-            req = urllib.request.Request(f"{self.base_url}/health", headers={"User-Agent": "Exactor-Advisor/1.0"})
+            req = urllib.request.Request(f"{self.base_url}/health", headers={"User-Agent": "Guardian-Advisor/1.0"})
             with urllib.request.urlopen(req, timeout=1.5) as resp:
                 return resp.status == 200
         except Exception:
@@ -74,7 +74,7 @@ class WafApiClient:
 
     def get_customer_rules(self):
         try:
-            req = urllib.request.Request(f"{self.base_url}/api/waf/rules/customer", headers={"User-Agent": "Exactor-Advisor/1.0"})
+            req = urllib.request.Request(f"{self.base_url}/api/waf/rules/customer", headers={"User-Agent": "Guardian-Advisor/1.0"})
             with urllib.request.urlopen(req, timeout=2.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("rules", [])
@@ -87,7 +87,7 @@ class WafApiClient:
             req = urllib.request.Request(
                 f"{self.base_url}/api/waf/rules/customer",
                 data=req_data,
-                headers={"Content-Type": "application/json", "User-Agent": "Exactor-Advisor/1.0"},
+                headers={"Content-Type": "application/json", "User-Agent": "Guardian-Advisor/1.0"},
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=2.0) as resp:
@@ -97,7 +97,7 @@ class WafApiClient:
 
     def get_islands_config(self):
         try:
-            req = urllib.request.Request(f"{self.base_url}/api/waf/islands/config", headers={"User-Agent": "Exactor-Advisor/1.0"})
+            req = urllib.request.Request(f"{self.base_url}/api/waf/islands/config", headers={"User-Agent": "Guardian-Advisor/1.0"})
             with urllib.request.urlopen(req, timeout=2.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("islands", {})
@@ -110,7 +110,7 @@ class WafApiClient:
             req = urllib.request.Request(
                 f"{self.base_url}/api/waf/islands/config",
                 data=req_data,
-                headers={"Content-Type": "application/json", "User-Agent": "Exactor-Advisor/1.0"},
+                headers={"Content-Type": "application/json", "User-Agent": "Guardian-Advisor/1.0"},
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=2.0) as resp:
@@ -120,8 +120,8 @@ class WafApiClient:
 
 
 # =============================================================================
-# AGENTE 1: TrafficPatternAgent
-# Analiza la base de datos forense (audit_log y novel_anomalies) y extrae clusters.
+# AGENT 1: TrafficPatternAgent
+# Analyzes forensic database (audit_log & novel_anomalies) and extracts patterns.
 # =============================================================================
 class TrafficPatternAgent:
     def __init__(self, db_path):
@@ -129,13 +129,13 @@ class TrafficPatternAgent:
 
     def analyze(self):
         if not os.path.exists(self.db_path):
-            return {"error": f"Base de datos {self.db_path} no encontrada."}
+            return {"error": f"Database {self.db_path} not found."}
 
         try:
             conn = sqlite3.connect(f"file:{os.path.abspath(self.db_path)}?mode=ro", uri=True)
             conn.row_factory = sqlite3.Row
         except Exception as e:
-            return {"error": f"Error conectando a SQLite: {e}"}
+            return {"error": f"Error connecting to SQLite: {e}"}
 
         patterns = {
             "total_records": 0,
@@ -307,7 +307,7 @@ class TrafficPatternAgent:
 
 
 # =============================================================================
-# AGENTE 2: SimulationAgent (Digital Twin & Verificación Formal de Cero FP)
+# AGENT 2: SimulationAgent (Digital Twin & 0% False Positive Verification)
 # =============================================================================
 class SimulationAgent:
     def __init__(self, db_path):
@@ -315,11 +315,11 @@ class SimulationAgent:
 
     def simulate_rule(self, rule_payload):
         """
-        Reejecuta la regla candidata sobre todas las 3,799 trazas históricas.
-        Demuestra si produce 0% falsos positivos y calcula ataques mitigados en perímetro.
+        Re-evaluates the candidate rule across all recorded historical traces.
+        Demonstrates certified 0% false positives and calculates attacks mitigated at perimeter.
         """
         if not os.path.exists(self.db_path):
-            return {"error": "Base de datos no encontrada"}
+            return {"error": "Database not found"}
 
         try:
             conn = sqlite3.connect(f"file:{os.path.abspath(self.db_path)}?mode=ro", uri=True)
@@ -390,8 +390,8 @@ class SimulationAgent:
 
 
 # =============================================================================
-# AGENTE 3: RuleSynthesizerAgent
-# Sintetiza reglas formales concretas basadas en los patrones y ejecuta simulación.
+# AGENT 3: RuleSynthesizerAgent
+# Synthesizes formal rules based on extracted patterns and runs digital twin simulations.
 # =============================================================================
 class RuleSynthesizerAgent:
     def __init__(self, patterns, current_rules, current_islands, simulator=None):
@@ -403,7 +403,7 @@ class RuleSynthesizerAgent:
     def synthesize(self):
         suggestions = []
 
-        # 1. Sugerencia de Blacklist para IPs Altamente Hostiles
+        # 1. Suggest Blacklist for Highly Hostile IPs
         for mip in self.patterns.get("malicious_ips", [])[:5]:
             ip = mip["ip"]
             already_blocked = any(ip in (r.get("blocked_ips") or []) for r in self.current_rules)
@@ -425,18 +425,18 @@ class RuleSynthesizerAgent:
                 sim = self.simulator.simulate_rule(payload) if self.simulator else None
                 sug = {
                     "type": "business_rule",
-                    "action_name": "Añadir Regla de Control de Acceso por IP (Blacklist)",
+                    "action_name": "Add IP Access Control Rule (Blacklist)",
                     "rule_id": payload["id"],
                     "name": payload["name"],
-                    "evidence": f"IP detectada con {mip['blocks']} ataques registrados ({cats}) y {mip['block_ratio']:.1f}% de hostilidad comprobada.",
-                    "risk_assessment": f"Bajo. La IP ejecutó {mip['blocks']} violaciones severas. Su bloqueo en O(1) elimina el vector de ataque.",
-                    "impact": f"Ahorra evaluación profunda del SAT al descartar inmediatamente esta IP en el Fast-Path con SAT-BIZ-02.",
+                    "evidence": f"IP detected with {mip['blocks']} recorded attacks ({cats}) and {mip['block_ratio']:.1f}% verified hostility rate.",
+                    "risk_assessment": f"Low risk. IP performed {mip['blocks']} severe violations. O(1) drop permanently eliminates this attack vector.",
+                    "impact": f"Saves deep SAT evaluation by immediately dropping this IP in Fast-Path via SAT-BIZ-02.",
                     "simulation": sim,
                     "rule_payload": payload,
                 }
                 suggestions.append(sug)
 
-        # 2. Sugerencia de Restricción Estricta de Métodos por Ruta
+        # 2. Suggest Strict Route Method Restriction
         for path, data in self.patterns.get("route_methods", {}).items():
             allowed = sorted(list(data["allowed"]))
             if allowed and path.startswith("/api/") and len(allowed) <= 3:
@@ -458,61 +458,61 @@ class RuleSynthesizerAgent:
                     sim = self.simulator.simulate_rule(payload) if self.simulator else None
                     sug = {
                         "type": "business_rule",
-                        "action_name": "Restricción Estricta de Verbos HTTP",
+                        "action_name": "Strict HTTP Method Restriction",
                         "rule_id": payload["id"],
                         "name": payload["name"],
-                        "evidence": f"La ruta {path} registra tráfico legítimo exclusivo con métodos {allowed}. Se detectaron intentos hostiles o superficie de ataque abierta.",
-                        "risk_assessment": f"Riesgo Nulo comprobado. Clientes legítimos solo utilizan {allowed}.",
-                        "impact": f"Cierra superficie de ataque descartando métodos no soportados ({', '.join(disallowed)}) con SAT-BIZ-01.",
+                        "evidence": f"Route {path} exhibits legitimate traffic restricted to methods {allowed}. Hostile probing or unconstrained attack surface detected.",
+                        "risk_assessment": f"Zero risk verified. Legitimate clients exclusively utilize {allowed}.",
+                        "impact": f"Closes attack surface by dropping unsupported methods ({', '.join(disallowed)}) via SAT-BIZ-01.",
                         "simulation": sim,
                         "rule_payload": payload,
                     }
                     suggestions.append(sug)
 
-        # 3. Sugerencia de Encendido de Islas de Certeza
+        # 3. Suggest Enabling Certainty Islands
         probes = self.patterns.get("probe_clusters", {})
         if probes.get("wordpress", 0) > 0 and not self.current_islands.get("wordpress_shield", True):
             suggestions.append({
                 "type": "island_toggle",
-                "action_name": "Activar Isla de Protección WordPress Shield",
+                "action_name": "Enable WordPress Shield Protection Island",
                 "island_key": "wordpress_shield",
                 "target_value": True,
-                "evidence": f"Se registraron {probes['wordpress']} sondas automatizadas hacia endpoints de WordPress (/wp-admin, xmlrpc, etc.).",
-                "risk_assessment": "Bajo (actívelo si su aplicación NO está construida sobre WordPress).",
-                "impact": "Descarta sondas de escaneo en < 20 µs evitando que alcancen el backend.",
+                "evidence": f"Recorded {probes['wordpress']} automated scanner probes targeting WordPress endpoints (/wp-admin, xmlrpc, etc.).",
+                "risk_assessment": "Low risk (enable if your application is NOT built on WordPress).",
+                "impact": "Drops scanner probes in < 20 µs preventing them from reaching backend upstream.",
             })
 
         if probes.get("exposure", 0) > 0 and not self.current_islands.get("exposure_shield", True):
             suggestions.append({
                 "type": "island_toggle",
-                "action_name": "Activar Isla de Protección Sensitive Exposure Shield",
+                "action_name": "Enable Sensitive Exposure Shield Protection Island",
                 "island_key": "exposure_shield",
                 "target_value": True,
-                "evidence": f"Se registraron {probes['exposure']} intentos de acceso a archivos confidenciales (.env, .git, consolas de BD).",
-                "risk_assessment": "Nulo. Ninguna aplicación de producción expone intencionalmente archivos .env o .git.",
-                "impact": "Bloquea intentos de reconocimiento de credenciales con SAT-EXP-01 y SAT-EXP-02.",
+                "evidence": f"Recorded {probes['exposure']} attempts to access confidential files (.env, .git, database consoles).",
+                "risk_assessment": "Zero risk. No production application intentionally exposes .env or .git files.",
+                "impact": "Blocks credential harvesting and reconnaissance probes via SAT-EXP-01 and SAT-EXP-02.",
             })
 
-        # 4. Sugerencia de Minimización Cloud para Novel Anomalies
+        # 4. Suggest Cloud Boolean Minimization for Novel Anomalies
         nov = self.patterns.get("novel_anomalies", {})
         if nov.get("pending_count", 0) > 0:
             p_cnt = nov["pending_count"]
             tot_occ = nov["total_occurrences"]
             suggestions.append({
                 "type": "cloud_synthesis",
-                "action_name": "Sincronización y Minimización Booleana en la Nube (Novel Anomalies)",
+                "action_name": "Cloud Boolean Synchronization & Minimization (Novel Anomalies)",
                 "island_key": "cloud_sync_pending_anomalies",
-                "evidence": f"Detectadas {p_cnt} anomalías de patrones no observados con {tot_occ} apariciones en producción pendientes de síntesis.",
-                "risk_assessment": "Riesgo Nulo. Proceso determinista de compilación que optimiza compuertas sin alterar lógica de seguridad.",
-                "impact": f"Compila anomalías en la ecuación SAT base reduciendo compuertas hasta un 80%. Consumo estimado: 1 Silicon Unit (SU).",
+                "evidence": f"Detected {p_cnt} novel unobserved pattern anomalies across {tot_occ} production occurrences pending cloud synthesis.",
+                "risk_assessment": "Zero risk. Deterministic Boolean compilation process that optimizes gate count without altering security logic.",
+                "impact": f"Compiles anomalies into baseline SAT equation reducing gate count by up to 80%. Estimated consumption: 1 Silicon Unit (SU).",
             })
 
         return suggestions
 
 
 # =============================================================================
-# AGENTE 4: HumanApprovalAgent
-# Presenta interactivamente cada sugerencia y aplica los cambios aprobados.
+# AGENT 4: HumanApprovalAgent
+# Interactively presents each proposal and hot-applies approved changes.
 # =============================================================================
 class HumanApprovalAgent:
     def __init__(self, api_client, config_path):
@@ -521,70 +521,70 @@ class HumanApprovalAgent:
 
     def present_and_apply(self, suggestions, auto_approve=False):
         if not suggestions:
-            print("\n\033[1;32m[✓] El Asesor Autónomo no encontró nuevas reglas pendientes. Su tráfico está optimizado.\033[0m")
+            print("\n\033[1;32m[✓] The Autonomous Advisor found no pending rules. Traffic is fully optimized.\033[0m")
             return 0, 0
 
         print(f"\n\033[1;36m{'='*78}\033[0m")
-        print(f"\033[1;37m EXACTOR-ADVISOR: {len(suggestions)} REGLA(S) SUGERIDA(S) PARA APROBACIÓN\033[0m")
+        print(f"\033[1;37m GUARDIAN-ADVISOR: {len(suggestions)} SUGGESTED RULE(S) FOR APPROVAL\033[0m")
         print(f"\033[1;36m{'='*78}\033[0m")
-        print("El sistema analizó las trazas forenses y formuló las siguientes propuestas.")
-        print("Cada regla será consultada individualmente al Administrador:")
+        print("The system analyzed forensic traces and formulated the following proposals.")
+        print("Each rule will be presented individually for Administrator approval:")
 
         approved_count = 0
         rejected_count = 0
 
         for idx, sug in enumerate(suggestions, 1):
-            print(f"\n\033[1;34m┌─ PROPUESTA #{idx} de {len(suggestions)}: {sug['action_name']}\033[0m")
-            print(f"\033[1;34m│\033[0m ID / Clave   : \033[1;37m{sug.get('rule_id', sug.get('island_key'))}\033[0m")
-            print(f"\033[1;34m│\033[0m Evidencia    : \033[1;33m{sug['evidence']}\033[0m")
-            print(f"\033[1;34m│\033[0m Evaluación   : \033[1;32m{sug['risk_assessment']}\033[0m")
-            print(f"\033[1;34m│\033[0m Impacto WAF  : \033[1;36m{sug['impact']}\033[0m")
+            print(f"\n\033[1;34m┌─ PROPOSAL #{idx} of {len(suggestions)}: {sug['action_name']}\033[0m")
+            print(f"\033[1;34m│\033[0m ID / Key     : \033[1;37m{sug.get('rule_id', sug.get('island_key'))}\033[0m")
+            print(f"\033[1;34m│\033[0m Evidence     : \033[1;33m{sug['evidence']}\033[0m")
+            print(f"\033[1;34m│\033[0m Assessment   : \033[1;32m{sug['risk_assessment']}\033[0m")
+            print(f"\033[1;34m│\033[0m WAF Impact   : \033[1;36m{sug['impact']}\033[0m")
 
-            # Muestra el veredicto del Gemelo Digital (SimulationAgent)
+            # Display Digital Twin verdict (SimulationAgent)
             sim = sug.get("simulation")
             if sim and not sim.get("error"):
                 if sim["certified_zero_false_positives"]:
-                    badge = f"\033[1;32m[✓ CERTIFICADO 0% FALSOS POSITIVOS]\033[0m {sim['benign_tested']} peticiones benignas probadas (0 colisiones)"
+                    badge = f"\033[1;32m[✓ CERTIFIED 0% FALSE POSITIVES]\033[0m {sim['benign_tested']} benign requests tested (0 collisions)"
                 else:
-                    badge = f"\033[1;31m[ALERTA REGRESIÓN]\033[0m {sim['false_positives_count']} colisiones detectadas"
-                print(f"\033[1;34m│\033[0m Simulación   : {badge}")
+                    badge = f"\033[1;31m[REGRESSION ALERT]\033[0m {sim['false_positives_count']} collisions detected"
+                print(f"\033[1;34m│\033[0m Simulation   : {badge}")
                 if sim["attacks_intercepted_at_perimeter"] > 0:
-                    print(f"\033[1;34m│\033[0m Ahorro CPU   : {sim['attacks_intercepted_at_perimeter']} ataques descartados en O(1) (~{sim['saved_latency_ms']} ms ahorrados)")
+                    print(f"\033[1;34m│\033[0m CPU Savings  : {sim['attacks_intercepted_at_perimeter']} attacks dropped in O(1) (~{sim['saved_latency_ms']} ms saved)")
 
             if sug["type"] == "business_rule":
                 payload = sug["rule_payload"]
-                print(f"\033[1;34m│\033[0m Configuración: Ruta='{payload['path_prefix']}', Métodos={payload.get('allowed_methods') or 'Todos'}, BlockIPs={payload.get('blocked_ips') or 'Ninguna'}")
+                print(f"\033[1;34m│\033[0m Configuration: Path='{payload['path_prefix']}', Methods={payload.get('allowed_methods') or 'All'}, BlockIPs={payload.get('blocked_ips') or 'None'}")
             elif sug["type"] == "island_toggle":
-                print(f"\033[1;34m│\033[0m Configuración: {sug['island_key']} = {sug['target_value']}")
+                print(f"\033[1;34m│\033[0m Configuration: {sug['island_key']} = {sug['target_value']}")
             print(f"\033[1;34m└─────────────────────────────────────────────────────────────────────────\033[0m")
 
             if auto_approve:
                 choice = "y"
             else:
-                prompt = "\n¿Desea APROBAR e implementar esta regla en el WAF? [S]í / [N]o (no hacer nada) / [Q]Salir: "
+                prompt = "\nDo you want to APPROVE and implement this rule in Guardian WAF? [Y]es / [N]o (no-op) / [Q]uit: "
                 try:
                     choice = input(prompt).strip().lower()
                 except (KeyboardInterrupt, EOFError):
-                    print("\nOperación cancelada por el usuario.")
+                    print("\nOperation cancelled by user.")
                     break
 
-            if choice in ("s", "si", "y", "yes"):
+            if choice in ("y", "yes"):
                 success = self._apply_rule(sug)
                 if success:
-                    print(f"\033[1;32m[✓ APROBADA] Regla implementada exitosamente en el WAF y guardada en configuración.\033[0m")
+                    print(f"\033[1;32m[✓ APPROVED] Rule implemented successfully in Guardian WAF and saved to configuration.\033[0m")
                     approved_count += 1
                 else:
-                    print(f"\033[1;33m[!] Regla aprobada guardada localmente en TOML (WAF API no disponible).\033[0m")
+                    print(f"\033[1;33m[!] Approved rule saved locally to TOML (WAF API offline).\033[0m")
                     approved_count += 1
             elif choice in ("q", "quit", "exit"):
-                print("Saliendo del proceso de revisión.")
+                print("Exiting review process.")
                 break
             else:
-                print(f"\033[1;35m[✗ RECHAZADA] Regla descartada por el Administrador. No se realizó ningún cambio.\033[0m")
+                print(f"\033[1;35m[✗ REJECTED] Rule dismissed by Administrator. No changes applied.\033[0m")
                 rejected_count += 1
 
         print(f"\n\033[1;36m{'='*78}\033[0m")
-        print(f"Resumen de Revisión: \033[1;32m{approved_count} Aprobada(s)\033[0m | \033[1;35m{rejected_count} Rechazada(s) (sin cambios)\033[0m")
+        print(f"Review Summary: \033[1;32m{approved_count} Approved\033[0m | \033[1;35m{rejected_count} Rejected (no-op)\033[0m")
         print(f"\033[1;36m{'='*78}\033[0m\n")
         return approved_count, rejected_count
 
@@ -610,7 +610,7 @@ class HumanApprovalAgent:
                 payload = sug["rule_payload"]
                 rule_block = [
                     "",
-                    f"# Regla sugerida por EXACTOR-ADVISOR ({time.strftime('%Y-%m-%d %H:%M:%S')})",
+                    f"# Rule suggested by GUARDIAN-ADVISOR ({time.strftime('%Y-%m-%d %H:%M:%S')})",
                     "[[business_rules.rules]]",
                     f'id = "{payload["id"]}"',
                     f'name = "{payload["name"]}"',
@@ -656,12 +656,12 @@ class HumanApprovalAgent:
                 with open(self.config_path, "w", encoding="utf-8") as f:
                     f.write("\n".join(new_lines) + "\n")
         except Exception as e:
-            print(f"[!] Advertencia: no se pudo escribir en {self.config_path}: {e}")
+            print(f"[!] Warning: could not write to {self.config_path}: {e}")
 
 
 # =============================================================================
-# AGENTE 5: ForensicReportAgent
-# Genera reportes ejecutivos y de cumplimiento en HTML y Markdown interactivos.
+# AGENT 5: ForensicReportAgent
+# Generates executive and compliance reports in interactive HTML and Markdown.
 # =============================================================================
 class ForensicReportAgent:
     def __init__(self, patterns, suggestions, current_rules):
@@ -694,7 +694,7 @@ class ForensicReportAgent:
                 <td><span class="badge badge-primary">{sug.get('type', 'rule')}</span></td>
                 <td><code>{sug.get('rule_id', sug.get('island_key'))}</code></td>
                 <td>{sug['evidence']}</td>
-                <td><span class="badge badge-success">✓ 0% FP Certificado</span></td>
+                <td><span class="badge badge-success">✓ 0% FP Certified</span></td>
                 <td>{sug['impact']}</td>
             </tr>
         """ for sug in self.suggestions)
@@ -709,11 +709,11 @@ class ForensicReportAgent:
         """ for pr in p.get("top_proofs", []))
 
         html = f"""<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXACTOR WAF GUARDIAN — Reporte Forense y Auditoría de Seguridad</title>
+    <title>GUARDIAN WAF — Forensic & Security Audit Report</title>
     <style>
         :root {{
             --bg: #0b0f19;
@@ -796,8 +796,8 @@ class ForensicReportAgent:
     <div class="container">
         <header>
             <div>
-                <h1>EXACTOR WAF GUARDIAN — Reporte Forense & Auditoría</h1>
-                <div class="timestamp">Generado por EXACTOR-ADVISOR Pipeline Multi-Agente | {time.strftime('%Y-%m-%d %H:%M:%S UTC')}</div>
+                <h1>GUARDIAN WAF — Forensic & Security Audit Report</h1>
+                <div class="timestamp">Generated by GUARDIAN-ADVISOR Multi-Agent Pipeline | {time.strftime('%Y-%m-%d %H:%M:%S UTC')}</div>
             </div>
             <div>
                 <span class="badge badge-success" style="font-size:14px;padding:6px 12px;">SOC 2 CC6.6 & PCI-DSS 6.6 ATTESTATION</span>
@@ -806,32 +806,32 @@ class ForensicReportAgent:
 
         <div class="grid">
             <div class="card">
-                <div class="card-label">Peticiones Analizadas</div>
+                <div class="card-label">Analyzed Requests</div>
                 <div class="card-value text-primary">{total:,}</div>
             </div>
             <div class="card">
-                <div class="card-label">Ataques Mitigados</div>
+                <div class="card-label">Mitigated Attacks</div>
                 <div class="card-value text-danger">{blocked:,} <span style="font-size:16px;">({block_pct:.1f}%)</span></div>
             </div>
             <div class="card">
-                <div class="card-label">Tráfico Legítimo Aprobado</div>
+                <div class="card-label">Approved Benign Traffic</div>
                 <div class="card-value text-success">{allowed:,} <span style="font-size:16px;">({allow_pct:.1f}%)</span></div>
             </div>
             <div class="card">
-                <div class="card-label">Latencia Media AST (p50)</div>
+                <div class="card-label">Mean AST Latency (p50)</div>
                 <div class="card-value text-warning">{lats.get('p50_us', 1200):,} <span style="font-size:16px;">µs</span></div>
             </div>
             <div class="card">
-                <div class="card-label">Anomalías Pendientes (Cloud)</div>
-                <div class="card-value text-primary">{nov.get('pending_count', 0)} <span style="font-size:16px;">mintérminos</span></div>
+                <div class="card-label">Pending Anomalies (Cloud)</div>
+                <div class="card-value text-primary">{nov.get('pending_count', 0)} <span style="font-size:16px;">minterms</span></div>
             </div>
         </div>
 
-        <div class="section-title">1. Desglose de Vectores de Amenaza y Tráfico</div>
+        <div class="section-title">1. Threat Vectors and Traffic Breakdown</div>
         <div class="card" style="padding:0;overflow:hidden;">
             <table>
                 <thead>
-                    <tr><th>Categoría</th><th>Volumen</th><th>Porcentaje</th><th>Distribución Visual</th></tr>
+                    <tr><th>Category</th><th>Volume</th><th>Percentage</th><th>Visual Distribution</th></tr>
                 </thead>
                 <tbody>
                     {cat_rows}
@@ -839,11 +839,11 @@ class ForensicReportAgent:
             </table>
         </div>
 
-        <div class="section-title">2. Deducciones Causales y Cláusulas SAT Violadas</div>
+        <div class="section-title">2. Causal Deductions and Violated SAT Clauses</div>
         <div class="card" style="padding:0;overflow:hidden;">
             <table>
                 <thead>
-                    <tr><th>Vector</th><th>Reglas Violadas</th><th>Cláusula Causal Matemática</th><th>Incidentes</th></tr>
+                    <tr><th>Threat Vector</th><th>Violated Rules</th><th>Mathematical Causal Clause</th><th>Incidents</th></tr>
                 </thead>
                 <tbody>
                     {proof_rows}
@@ -851,21 +851,21 @@ class ForensicReportAgent:
             </table>
         </div>
 
-        <div class="section-title">3. Reglas Sugeridas por el Pipeline Multi-Agente (Verificadas con Gemelo Digital)</div>
+        <div class="section-title">3. Rules Synthesized by Multi-Agent Pipeline (Verified with Digital Twin)</div>
         <div class="card" style="padding:0;overflow:hidden;">
             <table>
                 <thead>
-                    <tr><th>Tipo</th><th>Identificador</th><th>Evidencia Forense</th><th>Veredicto Gemelo Digital</th><th>Impacto Operativo</th></tr>
+                    <tr><th>Type</th><th>Identifier</th><th>Forensic Evidence</th><th>Digital Twin Verdict</th><th>Operational Impact</th></tr>
                 </thead>
                 <tbody>
-                    {sug_rows if sug_rows else '<tr><td colspan="5" style="text-align:center;padding:20px;">No hay reglas pendientes de aprobación. El perímetro está optimizado.</td></tr>'}
+                    {sug_rows if sug_rows else '<tr><td colspan="5" style="text-align:center;padding:20px;">No pending suggestions for approval. Perimeter traffic is fully optimized.</td></tr>'}
                 </tbody>
             </table>
         </div>
 
         <footer>
-            <div>Motor Ciberdefensa Determinista EXACTOR Core & SAT Logic — exactor.tech</div>
-            <div>Certificación Formal: 0% Falsos Positivos Comprobados Empíricamente</div>
+            <div>GUARDIAN WAF Deterministic Cyber-Defense Engine & SAT Logic — exactor.tech</div>
+            <div>Formal Certification: Certified 0% False Positives Empirically Proven</div>
         </footer>
     </div>
 </body>
@@ -881,18 +881,18 @@ class ForensicReportAgent:
         allowed = p.get("allowed_count", 0)
 
         lines = [
-            "# EXACTOR WAF GUARDIAN — Reporte Forense y Auditoría de Seguridad",
-            f"*Fecha de Generación:* {time.strftime('%Y-%m-%d %H:%M:%S UTC')}  ",
-            f"*Atestación:* SOC 2 CC6.6 & PCI-DSS 6.6 (Certificado Formal de Cero Falsos Positivos)  ",
+            "# GUARDIAN WAF — Forensic & Security Audit Report",
+            f"*Generation Date:* {time.strftime('%Y-%m-%d %H:%M:%S UTC')}  ",
+            f"*Attestation:* SOC 2 CC6.6 & PCI-DSS 6.6 (Certified Formal Zero False Positives)  ",
             "",
-            "## 1. Resumen Ejecutivo de Tráfico",
-            f"- **Peticiones Totales:** {total:,}",
-            f"- **Ataques Bloqueados:** {blocked:,} ({(blocked/total*100.0 if total else 0):.1f}%)",
-            f"- **Tráfico Benigno Aprobado:** {allowed:,} ({(allowed/total*100.0 if total else 0):.1f}%)",
-            f"- **Latencia Media:** {p.get('latency_stats', {}).get('avg_us', 0):,} µs",
+            "## 1. Executive Traffic Summary",
+            f"- **Total Requests:** {total:,}",
+            f"- **Blocked Attacks:** {blocked:,} ({(blocked/total*100.0 if total else 0):.1f}%)",
+            f"- **Approved Benign Traffic:** {allowed:,} ({(allowed/total*100.0 if total else 0):.1f}%)",
+            f"- **Mean Latency:** {p.get('latency_stats', {}).get('avg_us', 0):,} µs",
             "",
-            "## 2. Taxonomía de Ataques",
-            "| Categoría | Incidentes | Porcentaje |",
+            "## 2. Attack Taxonomy",
+            "| Category | Incidents | Percentage |",
             "| :--- | :---: | :---: |",
         ]
         for cat, cnt in p.get("category_distribution", {}).items():
@@ -900,8 +900,8 @@ class ForensicReportAgent:
 
         lines.extend([
             "",
-            "## 3. Pruebas Causales y Cláusulas SAT Violadas",
-            "| Categoría | Reglas | Cláusula Causal Matemática | Incidentes |",
+            "## 3. Causal Proofs and Violated SAT Clauses",
+            "| Category | Rules | Mathematical Causal Clause | Incidents |",
             "| :--- | :--- | :--- | :---: |",
         ])
         for pr in p.get("top_proofs", []):
@@ -909,12 +909,12 @@ class ForensicReportAgent:
 
         lines.extend([
             "",
-            "## 4. Reglas Sintetizadas por el Asesor Multi-Agente",
-            "| ID Regla | Evidencia Forense | Verificación Digital Twin | Impacto WAF |",
+            "## 4. Rules Synthesized by the Multi-Agent Advisor",
+            "| Rule ID | Forensic Evidence | Digital Twin Verification | WAF Impact |",
             "| :--- | :--- | :--- | :--- |",
         ])
         for sug in self.suggestions:
-            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | **✓ 0% FP Certificado** | {sug['impact']} |")
+            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | **✓ 0% FP Certified** | {sug['impact']} |")
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
@@ -922,7 +922,7 @@ class ForensicReportAgent:
 
 
 # =============================================================================
-# RUN ADVISOR PIPELINE HELPER (Llamado programáticamente o por CLI)
+# RUN ADVISOR PIPELINE HELPER (Invoked programmatically or via CLI)
 # =============================================================================
 def run_advisor_pipeline(db_path=None, config_path=None, api_url=DEFAULT_API_URL):
     db = find_file([db_path] if db_path else DEFAULT_DB_PATHS)
@@ -967,16 +967,16 @@ def run_advisor_pipeline(db_path=None, config_path=None, api_url=DEFAULT_API_URL
 # =============================================================================
 def main():
     parser = argparse.ArgumentParser(
-        description="EXACTOR-ADVISOR: Sistema Multi-Agente de Análisis Forense y Sugerencia de Reglas"
+        description="GUARDIAN-ADVISOR: Autonomous Multi-Agent Forensic Analysis & Rule Synthesis System"
     )
-    parser.add_argument("--db", default=None, help="Ruta al archivo SQLite waf_ledger.db")
-    parser.add_argument("--config", default=None, help="Ruta al archivo waf_config.toml")
-    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"URL del WAF API (por defecto: {DEFAULT_API_URL})")
-    parser.add_argument("--auto-approve", action="store_true", help="Aprobar automáticamente todas las sugerencias (modo batch)")
-    parser.add_argument("--dry-run", action="store_true", help="Solo analizar y listar sugerencias sin consultar aprobación")
-    parser.add_argument("--json", action="store_true", help="Exportar sugerencias y estadísticas en formato JSON")
-    parser.add_argument("--report", default=None, help="Ruta para generar reporte ejecutivo en formato HTML")
-    parser.add_argument("--report-md", default=None, help="Ruta para generar reporte ejecutivo en formato Markdown")
+    parser.add_argument("--db", default=None, help="Path to SQLite audit database (waf_ledger.db)")
+    parser.add_argument("--config", default=None, help="Path to configuration file (waf_config.toml)")
+    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"Guardian WAF Management API URL (default: {DEFAULT_API_URL})")
+    parser.add_argument("--auto-approve", action="store_true", help="Automatically approve all suggestions (batch mode)")
+    parser.add_argument("--dry-run", action="store_true", help="Only analyze and list suggestions without prompting for approval")
+    parser.add_argument("--json", action="store_true", help="Export suggestions and statistics in JSON format")
+    parser.add_argument("--report", default=None, help="Output path to generate executive report in HTML format")
+    parser.add_argument("--report-md", default=None, help="Output path to generate executive report in Markdown format")
     args = parser.parse_args()
 
     pipeline = run_advisor_pipeline(args.db, args.config, args.api)
@@ -994,17 +994,17 @@ def main():
     suggestions = pipeline["suggestions"]
     current_rules = pipeline["current_rules"]
 
-    # Generación de reportes HTML o Markdown si fue solicitado
+    # Generate HTML or Markdown reports if requested
     if args.report:
         rep_agent = ForensicReportAgent(patterns, suggestions, current_rules)
         out = rep_agent.generate_html_report(args.report)
-        print(f"\033[1;32m[✓] Reporte forense HTML generado con éxito en:\033[0m {out}")
+        print(f"\033[1;32m[✓] Forensic HTML report successfully generated at:\033[0m {out}")
         return
 
     if args.report_md:
         rep_agent = ForensicReportAgent(patterns, suggestions, current_rules)
         out = rep_agent.generate_markdown_report(args.report_md)
-        print(f"\033[1;32m[✓] Reporte forense Markdown generado con éxito en:\033[0m {out}")
+        print(f"\033[1;32m[✓] Forensic Markdown report successfully generated at:\033[0m {out}")
         return
 
     if args.json:
@@ -1029,37 +1029,37 @@ def main():
         return
 
     print("\033[1;36m" + "=" * 78 + "\033[0m")
-    print("\033[1;37m EXACTOR-ADVISOR — Pipeline Multi-Agente de Seguridad Autónomo\033[0m")
+    print("\033[1;37m GUARDIAN-ADVISOR — Autonomous Cybersecurity Multi-Agent Pipeline\033[0m")
     print("\033[1;36m" + "=" * 78 + "\033[0m")
-    print(f"Base de Datos Forense : \033[1;34m{db_path}\033[0m")
-    print(f"Archivo Configuración : \033[1;34m{config_path}\033[0m")
+    print(f"Forensic Database  : \033[1;34m{db_path}\033[0m")
+    print(f"Configuration File : \033[1;34m{config_path}\033[0m")
     
     is_live = api_client.check_health()
     if is_live:
-        print(f"Estado WAF Daemon     : \033[1;32mONLINE ({args.api}) — Hot-Reload Activo\033[0m")
+        print(f"WAF Daemon Status  : \033[1;32mONLINE ({args.api}) — Hot-Reload Active\033[0m")
     else:
-        print(f"Estado WAF Daemon     : \033[1;33mOFFLINE — Los cambios aprobados se aplicarán sobre {config_path}\033[0m")
+        print(f"WAF Daemon Status  : \033[1;33mOFFLINE — Approved changes will be persisted to {config_path}\033[0m")
 
-    print("\n\033[1;34m[1/3] Ejecutando TrafficPatternAgent & SimulationAgent...\033[0m")
-    print(f"  • Registros procesados : {patterns['total_records']} ({patterns['blocked_count']} bloqueados, {patterns['allowed_count']} permitidos)")
-    print(f"  • IPs maliciosas top   : {len(patterns['malicious_ips'])} detectadas con >90% tasa de hostilidad")
-    print(f"  • Categorías detectadas: {dict(patterns['category_distribution'])}")
+    print("\n\033[1;34m[1/3] Executing TrafficPatternAgent & SimulationAgent...\033[0m")
+    print(f"  • Records processed  : {patterns['total_records']} ({patterns['blocked_count']} blocked, {patterns['allowed_count']} allowed)")
+    print(f"  • Top hostile IPs    : {len(patterns['malicious_ips'])} detected with >90% hostility rate")
+    print(f"  • Threat categories  : {dict(patterns['category_distribution'])}")
     nov = patterns.get("novel_anomalies", {})
     if nov.get("pending_count", 0) > 0:
-        print(f"  • Anomalías no resueltas: {nov['pending_count']} mintérminos ({nov['total_occurrences']} ocurrencias) listas para síntesis Cloud")
+        print(f"  • Pending anomalies  : {nov['pending_count']} minterms ({nov['total_occurrences']} occurrences) ready for Cloud synthesis")
 
-    print("\n\033[1;34m[2/3] Ejecutando RuleSynthesizerAgent con Gemelo Digital...\033[0m")
-    print(f"  • Reglas formuladas    : {len(suggestions)} sugerencia(s) generada(s) y verificadas con 0 Falsos Positivos")
+    print("\n\033[1;34m[2/3] Executing RuleSynthesizerAgent with Digital Twin...\033[0m")
+    print(f"  • Rules synthesized  : {len(suggestions)} suggestion(s) generated and verified with 0 False Positives")
 
     if args.dry_run:
-        print(f"\n\033[1;33m[DRY-RUN] Modo informativo: Se encontraron {len(suggestions)} reglas candidatas.\033[0m")
+        print(f"\n\033[1;33m[DRY-RUN] Informational mode: Found {len(suggestions)} candidate rules.\033[0m")
         for s in suggestions:
             sim = s.get("simulation")
-            sim_badge = f" [0% FP, {sim['attacks_intercepted_at_perimeter']} ataques prevenidos]" if sim else ""
+            sim_badge = f" [0% FP, {sim['attacks_intercepted_at_perimeter']} attacks prevented]" if sim else ""
             print(f"  • [{s['type'].upper()}] {s['action_name']} -> {s.get('rule_id', s.get('island_key'))}{sim_badge}")
         return
 
-    print("\n\033[1;34m[3/3] Iniciando HumanApprovalAgent (Human-in-the-Loop)...\033[0m")
+    print("\n\033[1;34m[3/3] Launching HumanApprovalAgent (Human-in-the-Loop)...\033[0m")
     approval_agent = HumanApprovalAgent(api_client, config_path)
     approval_agent.present_and_apply(suggestions, auto_approve=args.auto_approve)
 

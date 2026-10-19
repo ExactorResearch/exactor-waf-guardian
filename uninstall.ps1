@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Exactor WAF Guardian - Windows Server Automated Uninstaller
+    Guardian WAF - Windows Server Automated Uninstaller
     Stops and removes the Windows Service, deletes installed binaries, and cleans PATH.
 #>
 
@@ -14,7 +14,7 @@ param(
 $ErrorActionPreference = "Continue"
 
 Write-Host "============================================================" -ForegroundColor Red
-Write-Host "Uninstalling Exactor WAF Guardian from Windows" -ForegroundColor Red
+Write-Host "Uninstalling Guardian WAF from Windows" -ForegroundColor Red
 Write-Host "============================================================" -ForegroundColor Red
 
 # Elevation check
@@ -63,4 +63,4 @@ if ($PurgeData) {
 }
 
 Write-Host ""
-Write-Host "Exactor WAF Guardian uninstallation complete." -ForegroundColor Green
+Write-Host "Guardian WAF uninstallation complete." -ForegroundColor Green

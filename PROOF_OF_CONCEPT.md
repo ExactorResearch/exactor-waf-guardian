@@ -1,8 +1,8 @@
-# 🧪 Exactor WAF Guardian: Proof of Concept (PoC)
+# 🧪 Guardian WAF: Proof of Concept (PoC)
 
 ## Executive Summary
 
-Before transitioning to the production-grade Rust reverse proxy daemon, the **Exactor WAF Guardian Proof of Concept (PoC)** was developed in Python to empirically demonstrate, benchmark, and visualize the neuro-symbolic SAT cyber-defense architecture against industry standards.
+Before transitioning to the production-grade Rust reverse proxy daemon, the **Guardian WAF Proof of Concept (PoC)** was developed in Python to empirically demonstrate, benchmark, and visualize the neuro-symbolic SAT cyber-defense architecture against industry standards.
 
 The PoC implements a **Multi-Agent Duel Simulator** that pits three distinct security paradigms against an identical, standardized stream of OWASP attack vectors and benign enterprise traffic:
 1. **Exactor SAT Agent (Neuro-Symbolic SAT & Certainty Islands):** Sub-millisecond deterministic evaluation, zero inference cost, and mathematically verifiable causal proof chains.
@@ -85,7 +85,7 @@ python run_cli.py --path "/api/v1/users" --method "POST" --body '{"username": "a
 **CLI Output Format:**
 ```text
 ================================================================================
- [SHIELD] EXACTOR WAF GUARDIAN - SINGLE PAYLOAD TRIAGE
+ [SHIELD] GUARDIAN WAF - SINGLE PAYLOAD TRIAGE
 ================================================================================
  Request: GET /api/users?id=1' OR '1'='1
 --------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ python run_benchmark.py 100
 #### Benchmark Output:
 ```text
 ================================================================================
- [BENCHMARK] Starting EXACTOR WAF GUARDIAN Evaluation (100 reqs)...
+ [BENCHMARK] Starting GUARDIAN WAF Evaluation (100 reqs)...
 ================================================================================
 
 +------------------------+----------+----------+----------+-------------+---------------+
@@ -139,7 +139,7 @@ python run_benchmark.py 100
 
 ## 📊 Strategic Blue Ocean Analysis (PoC Results)
 
-| Competitive Factor | Traditional Regex WAF (ModSecurity) | Cloud LLM WAF (Cloudflare AI / AWS) | Exactor WAF Guardian |
+| Competitive Factor | Traditional Regex WAF (ModSecurity) | Cloud LLM WAF (Cloudflare AI / AWS) | Guardian WAF |
 | :--- | :---: | :---: | :---: |
 | **Inference Cost** | Low ($0.00) | Prohibitive ($2,000+ / 1M reqs) | **Zero ($0.00)** |
 | **Network SLA Compliance** | Fast (1 - 5 ms) | Unacceptable (350 - 650 ms) | **Ultra-Fast (< 0.05 ms)** |

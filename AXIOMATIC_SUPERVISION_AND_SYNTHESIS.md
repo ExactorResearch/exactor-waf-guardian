@@ -5,7 +5,7 @@
 
 ### Executive Summary
 
-One of the most critical and disruptive questions regarding the **EXACTOR WAF Guardian** paradigm is:  
+One of the most critical and disruptive questions regarding the **Guardian WAF** paradigm is:  
 > *“If EXACTOR training is not supervised by humans labeling datasets by hand... how does the system know what constitutes an attack and what is benign? And if formal invariants already detect attacks... why is training needed at all?”*
 
 The answer lies in the transition from **Probabilistic Artificial Intelligence** (neural networks based on statistical curve fitting) to **Neuro-Symbolic Computing and Exact Boolean Algebra**:
@@ -52,7 +52,7 @@ Computer vulnerabilities obey **mathematical laws and rigid grammatical constrai
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
-When an HTTP request enters **Exactor WAF Guardian**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands (Islas de Certeza)**, the engine assigns:
+When an HTTP request enters **Guardian WAF**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands**, the engine assigns:
 $$\mathbf{F(\mathbf{x}) = 1 \quad \implies \quad \text{FORMAL LABEL: CONFIRMED ATTACK}}$$
 
 > **Epistemic Conclusion:**  
@@ -197,4 +197,4 @@ This architectural separation underpins the commercial efficiency of the product
 - [Deterministic SAT Cyber-Defense Methodology](file:///d:/proyectos/rush/exactor-waf-guardian/EXACTOR_METHODOLOGY.md)
 - [Proof of Concept & Multi-Agent Duel Benchmark](file:///d:/proyectos/rush/exactor-waf-guardian/PROOF_OF_CONCEPT.md)
 - [Silicon Unit Pricing & Licensing Rules](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md)
-- [Exactor WAF Guardian Master README](file:///d:/proyectos/rush/exactor-waf-guardian/README.md)
+- [Guardian WAF Master README](file:///d:/proyectos/rush/exactor-waf-guardian/README.md)

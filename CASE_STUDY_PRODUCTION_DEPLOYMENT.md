@@ -1,139 +1,139 @@
-# CASO DE ESTUDIO DE INGENIERÍA: DESPLIEGUE EN PRODUCCIÓN DE EXACTOR WAF GUARDIAN
+# ENGINEERING CASE STUDY: PRODUCTION DEPLOYMENT OF GUARDIAN WAF
 
-**Objetivo:** Integración perimetral de EXACTOR SAT WAF Guardian con Nginx en un entorno de producción multicapa (`exactor.tech`), análisis de fallos en vivo y endurecimiento (*hardening*) arquitectónico.  
-**Fecha:** Octubre 2026  
-**Entorno de Validación:** Linux (Ubuntu 24.04 LTS / Debian 12), Nginx 1.24, Systemd, Unix Domain Sockets (UDS).  
-**Dominio de Producción:** `https://exactor.tech`  
-
----
-
-## 1. Resumen Ejecutivo
-
-Este caso de estudio documenta el proceso real de puesta en marcha, diagnóstico y optimización de **EXACTOR WAF Guardian** como un cortafuegos de aplicaciones web de tiempo de ejecución sub-milisegundo. 
-
-A diferencia de los entornos sintéticos de laboratorio, el despliegue sobre tráfico HTTPS real reveló cuatro fricciones críticas en los límites de interacción entre el sistema operativo (Linux), el proxy inverso (Nginx) y el evaluador formal de invariantes booleanos (Rust). La resolución sistemática de estos problemas no solo permitió alcanzar una tasa de detección del **100% en inyecciones SQL en perímetro (HTTP 403 en < 400 µs)**, sino que impulsó una **mejora fundamental en la gramática del analizador sintáctico de SSRF**, eliminando por completo los falsos positivos en navegación legítima.
+**Objective:** Perimeter integration of Guardian WAF with Nginx in a multi-tier production environment (`exactor.tech`), live failure triage, and architectural hardening.  
+**Date:** October 2026  
+**Validation Environment:** Linux (Ubuntu 24.04 LTS / Debian 12), Nginx 1.24, Systemd, Unix Domain Sockets (UDS).  
+**Production Domain:** `https://exactor.tech`  
 
 ---
 
-## 2. Topología de la Infraestructura Protegida
+## 1. Executive Summary
 
-El servidor `exactor.tech` ejecuta múltiples capas de servicios simultáneos que requerían coexistir bajo una única terminación TLS con certificados gestionados por Certbot:
+This engineering case study documents the real-world provisioning, diagnosis, and optimization process of **Guardian WAF** as a sub-millisecond runtime web application firewall.
+
+Unlike synthetic laboratory benchmarks, deploying on live HTTPS production traffic exposed four critical boundary friction points across the operating system (Linux), the reverse proxy (Nginx), and the formal Boolean invariant evaluator (Rust). Systematically resolving these issues not only achieved a **100% perimeter SQL injection detection rate (HTTP 403 in < 400 µs)**, but also drove a **foundational grammar enhancement in the SSRF parser**, completely eliminating false positives on legitimate web browsing.
+
+---
+
+## 2. Protected Infrastructure Topology
+
+The production server at `exactor.tech` hosts multiple simultaneous service layers coexisting under unified TLS termination with automated Certbot certificates:
 
 ```
-[ Cliente / Atacante Web ]
+[ Client / Web Attacker ]
            │
      (HTTPS :443)
            ▼
-[ Nginx Reverse Proxy (Perímetro) ]
+[ Nginx Reverse Proxy (Perimeter) ]
     │
-    ├── (1) Subpetición Interna (auth_request) ──► [ /var/run/exactor/waf.sock ]
+    ├── (1) Internal Subrequest (auth_request) ──► [ /var/run/exactor/waf.sock ]
     │                                                     │
-    │                                             [ EXACTOR SAT WAF ]
-    │                                             Evaluador en Rust (SIMD)
-    │                                             Ledger WAL SQLite
+    │                                             [ GUARDIAN WAF ]
+    │                                             Rust SIMD Evaluator
+    │                                             SQLite WAL Ledger
     │                                                     │
-    │◄─── Veredicto: 200 ALLOW / 403 BLOCK ───────────────┘
+    │◄─── Verdict: 200 ALLOW / 403 BLOCK ─────────────────┘
     │
-    ├── /api/      ──► API Cloud de Simplificación Lógica (:5000 / :3000)
-    ├── /mcp/      ──► Servidor Model Context Protocol (:8080)
-    ├── /apibnn/   ──► Motor de Optimización BNN (:8090)
-    └── /          ──► Aplicación Web SPA & Páginas HTML (:5000)
+    ├── /api/      ──► Cloud Logic Simplification API (:5000 / :3000)
+    ├── /mcp/      ──► Model Context Protocol Server (:8080)
+    ├── /apibnn/   ──► BNN Optimization Engine (:8090)
+    └── /          ──► SPA Web Application & Static Assets (:5000)
 ```
 
 ---
 
-## 3. Bitácora de Desafíos Técnicos, Análisis Causal y Soluciones
+## 3. Technical Challenges Log, Root Cause Analysis, and Solutions
 
-### Desafío 1: Ciclo de Vida del Socket IPC en Memoria Volátil (Systemd & tmpfs)
-* **Síntoma:** El servicio fallaba al iniciar (`status=1/FAILURE`) y arrojaba:
+### Challenge 1: IPC Socket Lifecycle in Volatile Memory (Systemd & tmpfs)
+* **Symptom:** Service startup failed (`status=1/FAILURE`) with the error:
   ```text
   ls: cannot access '/var/run/exactor/waf.sock': No such file or directory
   ```
-* **Análisis de Causa Raíz:** En distribuciones Linux modernas, `/var/run` es un montaje `tmpfs` en memoria RAM que se destruye en cada reinicio del sistema. Si el servicio corre como un usuario sin privilegios (`www-data`) y la carpeta no existe, el daemon aborta de inmediato al no poder crear el archivo del socket. Adicionalmente, el parser de Rust abortaba si los campos `listen_addr` y `upstream_url` no estaban presentes en el TOML.
-* **Solución de Ingeniería:**
-  1. Configuración de directivas nativas de Systemd:
+* **Root Cause Analysis:** On modern Linux distributions, `/var/run` is a `tmpfs` RAM mount recreated upon every system reboot. When running the service as an unprivileged user (`www-data`) and the folder does not exist, the daemon aborts immediately because it cannot bind the socket file. Additionally, the Rust configuration parser aborted if `listen_addr` and `upstream_url` were omitted from the TOML configuration.
+* **Engineering Solution:**
+  1. Configured native Systemd lifecycle directives:
      ```ini
      RuntimeDirectory=exactor
      RuntimeDirectoryMode=0775
      StateDirectory=exactor
      WorkingDirectory=/var/lib/exactor
      ```
-     Esto instruye al kernel para aprovisionar automáticamente `/run/exactor` con dueño `www-data:www-data` antes de ejecutar el binario.
-  2. Asignación de almacenamiento persistente para la base de datos de auditoría en `/var/lib/exactor/waf_ledger.db`.
+     This instructs the Linux kernel to automatically provision `/run/exactor` owned by `www-data:www-data` prior to executing the binary.
+  2. Allocated persistent state directory storage for the audit database at `/var/lib/exactor/waf_ledger.db`.
 
 ---
 
-### Desafío 2: Resolución de Nombres en Proxy Inverso (Nginx Upstream Resolution)
-* **Síntoma:** Nginx no levantaba tras reiniciar, arrojando:
+### Challenge 2: Reverse Proxy Name Resolution (Nginx Upstream Resolution)
+* **Symptom:** Nginx failed to start after configuration reload:
   ```text
   [emerg] host not found in upstream "exactor_waf_backend" in /etc/nginx/sites-enabled/default
   ```
-* **Análisis de Causa Raíz:** Los bloques `upstream` en Nginx únicamente pueden declararse en el contexto `http { }`. Al declararse dentro de un archivo de sitio sin el contexto adecuado, Nginx interpretaba `"exactor_waf_backend"` como un nombre de host de internet y fallaba al intentar resolverlo mediante DNS externo.
-* **Solución de Ingeniería:** Se eliminó la capa abstracta del bloque upstream conectando directamente con la sintaxis nativa de socket Unix de Nginx:
+* **Root Cause Analysis:** In Nginx, `upstream` blocks may only be declared within the global `http { }` context. When declared inside a server or site configuration file without the enclosing http block, Nginx interpreted `"exactor_waf_backend"` as an external internet hostname and failed DNS resolution.
+* **Engineering Solution:** Removed the abstract upstream proxy layer, connecting directly via Nginx's native Unix domain socket syntax:
   ```nginx
   proxy_pass http://unix:/var/run/exactor/waf.sock:/ext_authz;
   ```
-  Esto erradica la dependencia de DNS y asegura una comunicación IPC pura en memoria kernel (~123 µs de latencia).
+  This eliminates DNS lookups entirely and ensures pure in-kernel memory IPC communication (~123 µs latency).
 
 ---
 
-### Desafío 3: El Dilema del Agotamiento del Cuerpo en Subpeticiones HTTP (POST en `/api/`)
-* **Síntoma:** Las peticiones `POST` a `/api/login` y `/api/register` se congelaban por timeout o arrojaban errores de payload vacío (`EOF / 400 Bad Request`).
-* **Análisis de Causa Raíz:** En Nginx, el módulo `ngx_http_auth_request_module` ejecuta una subpetición interna. Cuando se activa `proxy_pass_request_body on;` en la subpetición:
-  1. Nginx lee el flujo de bytes del body JSON del cliente y se lo entrega al WAF.
-  2. Nginx **no rebobina el socket del cliente**.
-  3. Cuando la subpetición retorna 200 OK y Nginx redirige el tráfico a la aplicación real (`localhost:5000`), el socket del cuerpo ya está vacío, pero la cabecera `Content-Length` indica que deberían venir datos. La aplicación backend se queda esperando indefinidamente o falla al deserializar.
-* **Solución de Ingeniería:** Desacoplar la verificación de autorización del streaming de datos:
+### Challenge 3: HTTP Subrequest Body Exhaustion Dilemma (POST on `/api/`)
+* **Symptom:** `POST` requests to `/api/login` and `/api/register` hung indefinitely due to timeouts or returned empty payload errors (`EOF / 400 Bad Request`).
+* **Root Cause Analysis:** In Nginx, the `ngx_http_auth_request_module` executes an internal subrequest. When `proxy_pass_request_body on;` is enabled on the subrequest:
+  1. Nginx reads the client's incoming JSON body stream and delivers it to the WAF.
+  2. Nginx **does not rewind client socket buffers**.
+  3. When the subrequest returns `200 OK` and Nginx proceeds to forward the traffic to the real backend (`localhost:5000`), the body socket is already empty, but the `Content-Length` header indicates incoming data. The backend application blocks waiting indefinitely or fails deserialization.
+* **Engineering Solution:** Decoupled authorization verification from the primary payload data stream:
   ```nginx
   proxy_pass_request_body off;
   proxy_set_header Content-Length "";
   ```
-  El WAF evalúa la identidad de la petición, método, ruta, query strings, cookies e IP en microsegundos, permitiendo que el cuerpo intacto pase al backend una vez autorizado.
+  The WAF evaluates request identity, HTTP method, path, query strings, headers, cookies, and IP in microseconds, allowing the intact payload body to stream directly to the backend once authorized.
 
 ---
 
-### Desafío 4: Falsos Positivos de SSRF y Endurecimiento de la Gramática Lógica (`SAT-SSRF-01`)
-* **Síntoma:** Al intentar acceder a `https://exactor.tech/login.html` o enviar credenciales, el WAF respondía con bloqueo perimetral:
+### Challenge 4: SSRF False Positives and Logical Grammar Hardening (`SAT-SSRF-01`)
+* **Symptom:** Browsing to `https://exactor.tech/login.html` or submitting credentials triggered unexpected perimeter blocking:
   ```json
-  {"error": "Forbidden by EXACTOR Perimeter Security", "status": "BLOCKED", "rule": "SAT-SSRF-01"}
+  {"error": "Forbidden by Guardian Perimeter Security", "status": "BLOCKED", "rule": "SAT-SSRF-01"}
   ```
-* **Análisis de Causa Raíz (El Hallazgo Crítico):**
-  1. Al conectar con un socket Unix sin declarar `Host`, Nginx enviaba automáticamente la cabecera `Host: localhost`.
-  2. El navegador enviaba legítimamente `Referer: https://exactor.tech/login.html` (que contiene `https://`).
-  3. El evaluador de SSRF del WAF utilizaba una regla de coocurrencia booleana ingenua:
+* **Root Cause Analysis (The Critical Finding):**
+  1. Connecting to a Unix socket without explicitly setting `Host` caused Nginx to default to `Host: localhost`.
+  2. The browser legitimately included `Referer: https://exactor.tech/login.html` (which contains `https://`).
+  3. The WAF's SSRF evaluator evaluated an overly broad Boolean co-occurrence rule:
      $$\text{has\_scheme}(\text{"https://"}) \land \text{matches\_target}(\text{"localhost"}) \implies \text{SSRF\_ATTACK}$$
-  4. Aunque ambos elementos venían de cabeceras distintas e inconexas, el WAF los agrupó en el espacio de evaluación y determinó que existía una petición a loopback (*Host Header Pollution*).
-* **Solución de Ingeniería y Maduración de Producto:**
-  - **A nivel de Nginx:** Se forzó la higienización de cabeceras enviando el dominio real y neutralizando el Referer en la subpetición:
-    ```nginx
-    proxy_set_header Host $host;
-    proxy_set_header Referer "";
-    ```
-  - **A nivel del Motor de Reglas en Rust:** Se modificó la gramática léxica (`lexer.rs`) para exigir **ligadura sintáctica contigua**. El token de SSRF ahora exige que el esquema (`http://`, `https://`, `gopher://`) esté inmediatamente precedido y prefijado a la IP o host interno dentro del mismo token de URI:
-    ```rust
-    // Exige URI completa apuntando a loopback, RFC1918 o metadatos de nube
-    Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"#)
-    ```
-  *Resultado:* Tráfico legítimo con `Referer: https://...` pasa sin obstáculos (0% falsos positivos), mientras que intentos reales como `?dest=http://127.0.0.1:8080` son aniquilados al instante.
+  4. Although these tokens originated from completely distinct and unrelated headers, the WAF grouped them in the evaluation lattice, incorrectly detecting a loopback SSRF attack (*Host Header Pollution*).
+* **Engineering Solution & Product Hardening:**
+  - **At Nginx Layer:** Sanitized subrequest headers by passing the actual host and clearing the Referer:
+     ```nginx
+     proxy_set_header Host $host;
+     proxy_set_header Referer "";
+     ```
+  - **At Rust Engine Layer:** Hardened the lexical grammar (`lexer.rs`) to enforce **contiguous syntactic binding**. The SSRF token now strictly requires the URI scheme (`http://`, `https://`, `gopher://`) to be immediately prepended to the internal IP or target host within the identical URI token:
+     ```rust
+     // Enforces full URI syntax targeting loopback, RFC1918, or cloud metadata services
+     Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"#)
+     ```
+  *Result:* Legitimate browsing traffic carrying `Referer: https://...` passes smoothly (0% false positives), while genuine exploit attempts such as `?dest=http://127.0.0.1:8080` are instantly dropped.
 
 ---
 
-### Desafío 5: Cobertura de Perímetro Unificada (`/search` vs `/api/search`)
-* **Síntoma:** `curl "https://exactor.tech/api/search?q=admin'%20OR%201=1--"` era bloqueado con 403, pero `curl "https://exactor.tech/search?q=admin'%20OR%201=1--"` pasaba desprotegido.
-* **Análisis de Causa Raíz:** La directiva `auth_request` había sido restringida al bloque `location /api/`, dejando las rutas raíz bajo `location /` expuestas al backend.
-* **Solución de Ingeniería:** Se promovió `auth_request` al bloque global `server { }`, asegurando inspección perimetral omnidireccional (`/`, `/api/`, `/mcp/`, `/apibnn/`), exceptuando únicamente la renovación de Certbot y los assets estáticos (`.css`, `.js`, imágenes).
+### Challenge 5: Unified Perimeter Coverage (`/search` vs `/api/search`)
+* **Symptom:** `curl "https://exactor.tech/api/search?q=admin'%20OR%201=1--"` was blocked with 403, but `curl "https://exactor.tech/search?q=admin'%20OR%201=1--"` bypassed inspection.
+* **Root Cause Analysis:** The `auth_request` directive had been restricted exclusively to the `location /api/` block, leaving root endpoints under `location /` exposed directly to the backend.
+* **Engineering Solution:** Promoted `auth_request` to the global `server { }` block, ensuring omnidirectional perimeter enforcement (`/`, `/api/`, `/mcp/`, `/apibnn/`), while specifically excluding Certbot ACME renewal challenges and static assets (`.css`, `.js`, images).
 
 ---
 
-## 4. Evidencia Empírica de Validación en Producción
+## 4. Empirical Validation Evidence in Production
 
-Tras implementar las correcciones, se ejecutó una batería de pruebas automatizadas sobre el dominio en vivo:
+Following the implementation of these solutions, automated verification tests were executed against the live production domain:
 
-### Caso A: Detección de Inyección SQL Tautológica en Perímetro
+### Case A: Tautological SQL Injection Detection at Perimeter
 ```bash
 curl -i "https://exactor.tech/api/search?q=admin'%20OR%201=1--"
 ```
-**Respuesta del Servidor:**
+**Server Response:**
 ```http
 HTTP/1.1 403 Forbidden
 Server: nginx/1.24.0 (Ubuntu)
@@ -144,31 +144,31 @@ Connection: keep-alive
 X-WAF-Blocked: true
 X-WAF-Rule: SAT-SQLI-01
 
-{"error": "Forbidden by EXACTOR Perimeter Security", "status": "BLOCKED", "rule": "SAT-SQLI-01"}
+{"error": "Forbidden by Guardian Perimeter Security", "status": "BLOCKED", "rule": "SAT-SQLI-01"}
 ```
-*Veredicto:* **Bloqueado.** El ataque fue neutralizado en el perímetro en menos de 0.4 ms sin consumir CPU de las bases de datos o backends.
+*Verdict:* **Blocked.** The attack was neutralized at the perimeter in under 0.4 ms without consuming backend or database compute.
 
 ---
 
-### Caso B: Detección de Inyección SQL en Ruta Raíz
+### Case B: SQL Injection Detection on Root Path
 ```bash
 curl -i "https://exactor.tech/search?q=admin'%20OR%201=1--"
 ```
-**Respuesta del Servidor:**
+**Server Response:**
 ```http
 HTTP/1.1 403 Forbidden
 X-WAF-Blocked: true
 X-WAF-Rule: SAT-SQLI-01
 ```
-*Veredicto:* **Bloqueado.** Cobertura global confirmada sobre rutas dinámicas principales.
+*Verdict:* **Blocked.** Global perimeter protection verified on primary dynamic routes.
 
 ---
 
-### Caso C: Navegación Web Legítima (Página de Acceso)
+### Case C: Legitimate Web Browsing (Login Page)
 ```bash
 curl -i "https://exactor.tech/login.html"
 ```
-**Respuesta del Servidor:**
+**Server Response:**
 ```http
 HTTP/1.1 200 OK
 Server: nginx/1.24.0 (Ubuntu)
@@ -176,94 +176,94 @@ Content-Type: text/html
 X-WAF-Latency-US: 112.4
 X-WAF-Verified: ALLOW
 ```
-*Veredicto:* **Aprobado.** Navegación fluida sin falsos positivos de SSRF.
+*Verdict:* **Allowed.** Seamless navigation with zero SSRF false positives.
 
 ---
 
-### Caso D: Creación de Usuarios y Autenticación JSON (POST)
+### Case D: User Creation and JSON Authentication (POST)
 ```bash
 curl -i -X POST "https://exactor.tech/api/login" \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@exactor.tech","password":"valid_secret"}'
 ```
-**Respuesta del Servidor:**
+**Server Response:**
 ```http
 HTTP/1.1 200 OK
 X-WAF-Verified: ALLOW
 {"status":"SUCCESS","token":"jwt_session_valid..."}
 ```
-*Veredicto:* **Aprobado.** El cuerpo JSON llegó íntegro al backend, validando la eliminación del drenaje de socket.
+*Verdict:* **Allowed.** The JSON payload body arrived completely intact at the backend, confirming elimination of socket body drainage.
 
 ---
 
-## 5. Tabla Comparativa: Antes vs. Después del Despliegue
+## 5. Comparative Matrix: Pre-Deployment vs. Production Optimized
 
-| Vector / Métrica | Configuración Previa | Estado Optimizado (Producción) |
+| Vector / Metric | Pre-Deployment State | Production Optimized State |
 | :--- | :--- | :--- |
-| **Integración con Nginx** | Sin WAF (Exposición directa a `:5000`) | Subpetición UDS nativa (`waf.sock`) en < 130 µs |
-| **Gestión de IPC en Linux** | Dependencia manual propensa a caídas | `RuntimeDirectory=exactor` en Systemd (Resiliencia 100%) |
-| **Tráfico POST con Payload** | Fallo por drenaje de socket (400/504) | Desacople de streaming (`proxy_pass_request_body off`) |
-| **Precisión de Regla SSRF** | Falsos positivos por coocurrencia de cabeceras | Ligadura sintáctica estricta en AST (0% falsos positivos) |
-| **Protección contra SQLi/XSS** | Vulnerable en capa de aplicación | Intercepción perimetral HTTP 403 en P99 < 0.5 ms |
+| **Nginx Integration** | Unprotected (Direct exposure to `:5000`) | Native UDS subrequest (`waf.sock`) in < 130 µs |
+| **Linux IPC Lifecycle** | Manual script vulnerable to reboot failure | Systemd `RuntimeDirectory=exactor` (100% resilient) |
+| **POST Traffic with Body** | Failed due to body drain (400/504) | Streaming decoupled (`proxy_pass_request_body off`) |
+| **SSRF Rule Accuracy** | False positives from cross-header co-occurrence | Strict AST syntactic token binding (0% false positives) |
+| **SQLi/XSS Protection** | Vulnerable at application level | Perimeter drop with HTTP 403 in P99 < 0.5 ms |
 
 ---
 
-## 6. Proceso Operativo de Seguimiento, Diagnóstico y Auditoría de Errores
+## 6. Operational Procedures for Monitoring, Troubleshooting, and Error Auditing
 
-Para garantizar alta disponibilidad y resolución inmediata de incidencias en producción, se estableció un protocolo de observabilidad y diagnóstico distribuido en cuatro capas correlacionadas:
+To ensure high availability and rapid incident resolution in production, a four-layer observability and diagnostics architecture was deployed:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       FLUJO DE OBSERVABILIDAD EN 4 CAPAS                     │
+│                       4-LAYER OBSERVABILITY WORKFLOW                        │
 ├───────────────────────────────┬─────────────────────────────────────────────┤
-│ 1. Nginx Perimetral           │ Headers de respuesta, HTTP Status y logs    │
-│ 2. Systemd Journalctl en Vivo │ Streaming de eventos de bloqueo y alertas   │
-│ 3. Base SQLite WAL Ledger     │ Auditoría forense inmutable y prueba causal │
-│ 4. API de Métricas JSON :9002 │ Monitoreo cuantitativo y telemetría         │
+│ 1. Perimeter Nginx            │ Response headers, HTTP status, and logs     │
+│ 2. Live Systemd Journalctl    │ Real-time streaming of drops and alerts     │
+│ 3. SQLite WAL Ledger Database │ Immutable forensic audit log and causal SAT │
+│ 4. JSON Metrics API :9002     │ Quantitative telemetry and uptime counters  │
 └───────────────────────────────┴─────────────────────────────────────────────┘
 ```
 
-### Capa 1: Diagnóstico en Perímetro Nginx (Headers y Formato de Logs)
-Cuando un cliente o aplicación reporta una anomalía, el primer punto de inspección son las cabeceras HTTP devueltas al cliente:
-- `X-WAF-Blocked: true`: La petición fue neutralizada por EXACTOR WAF.
-- `X-WAF-Rule: SAT-XXXX-XX`: Nombre de la regla exacta del catálogo que disparó el bloqueo (ej. `SAT-SQLI-01`, `SAT-SSRF-01`, `SAT-XSS-01`).
-- `X-WAF-Latency-US: 118.4`: Tiempo de evaluación formal en microsegundos.
-- `X-WAF-Verified: ALLOW`: La petición fue inspeccionada y aprobada.
+### Layer 1: Nginx Perimeter Diagnostics (Headers and Log Formatting)
+When client applications report unexpected behavior, HTTP response headers provide immediate diagnostic insight:
+- `X-WAF-Blocked: true`: Request was dropped by Guardian WAF.
+- `X-WAF-Rule: SAT-XXXX-XX`: Exact invariant rule triggered (e.g. `SAT-SQLI-01`, `SAT-SSRF-01`, `SAT-XSS-01`).
+- `X-WAF-Latency-US: 118.4`: Formal mathematical evaluation duration in microseconds.
+- `X-WAF-Verified: ALLOW`: Request was inspected and verified as legitimate.
 
-**Formato de Registro Estructurado Recomendado en `/etc/nginx/nginx.conf`:**
-Para correlacionar peticiones en herramientas SIEM (Datadog, Elastic, Grafana Loki), se configura un log format dedicado:
+**Recommended Structured Log Format in `/etc/nginx/nginx.conf`:**
+To correlate requests in SIEM platforms (Datadog, Elastic, Grafana Loki), a dedicated log format is defined:
 ```nginx
-log_format exactor_audit '$remote_addr - $remote_user [$time_local] "$request" '
-                         '$status $body_bytes_sent "$http_referer" "$http_user_agent" '
-                         'rt=$request_time waf_verdict="$waf_verified" waf_rule="$waf_rule" '
-                         'waf_latency="${waf_latency}us"';
+log_format guardian_audit '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" "$http_user_agent" '
+                          'rt=$request_time waf_verdict="$waf_verified" waf_rule="$waf_rule" '
+                          'waf_latency="${waf_latency}us"';
 ```
 
 ---
 
-### Capa 2: Monitoreo en Vivo vía Systemd Journalctl
-Para observar el comportamiento del motor en tiempo real y capturar cualquier violación:
+### Layer 2: Live Monitoring via Systemd Journalctl
+To observe firewall activity in real time and monitor security alerts:
 ```bash
 sudo journalctl -u exactor-waf -f -n 50
 ```
-**Estructura de la traza de bloqueo:**
+**Drop Log Structure:**
 ```text
 🛑 [ENVOY-SAT-BLOCK] [7c79fd7a] IP: 190.20.192.202 Category: ssrf Rule: SAT-SSRF-01 (382.3 µs)
 ```
-- `[7c79fd7a]`: ID único del evento para trazabilidad forense cruzada.
-- `IP`: Dirección IP de origen del cliente.
-- `Category`: Categoría semántica del vector (`sqli`, `xss`, `rce`, `ssrf`, `rate_limit`, `traversal`).
-- `Rule`: Invariante lógico violado.
-- `(382.3 µs)`: Tiempo total de resolución de la cláusula.
+- `[7c79fd7a]`: Unique event ID for cross-system forensic traceability.
+- `IP`: Client source IP address.
+- `Category`: Attack classification (`sqli`, `xss`, `rce`, `ssrf`, `rate_limit`, `traversal`).
+- `Rule`: Logical invariant violated.
+- `(382.3 µs)`: Total clause resolution time.
 
 ---
 
-### Capa 3: Auditoría Forense en SQLite WAL (`/var/lib/exactor/waf_ledger.db`)
-El daemon registra de forma asíncrona no bloqueante cada evento en la base de datos local SQLite utilizando el modo WAL (*Write-Ahead Logging*).
+### Layer 3: Forensic Auditing in SQLite WAL (`/var/lib/exactor/waf_ledger.db`)
+The daemon asynchronously records every transaction to a local SQLite database configured in WAL (*Write-Ahead Logging*) mode without impacting network request paths.
 
-**Consultas útiles para análisis forense:**
+**Essential Forensic Queries:**
 
-1. **Inspeccionar los últimos ataques bloqueados con su regla y path:**
+1. **Inspect recent blocked attacks with their rule ID and target path:**
    ```bash
    sqlite3 /var/lib/exactor/waf_ledger.db "
    SELECT id, request_id, client_ip, method, path, action, category, execution_time_us, created_at 
@@ -272,16 +272,16 @@ El daemon registra de forma asíncrona no bloqueante cada evento en la base de d
    ORDER BY id DESC LIMIT 15;"
    ```
 
-2. **Extraer la prueba formal matemática (LaTeX y deducción causal) de un incidente:**
+2. **Retrieve the formal mathematical proof (LaTeX and causal deduction steps) for an incident:**
    ```bash
    sqlite3 /var/lib/exactor/waf_ledger.db "
    SELECT request_id, path, proof 
    FROM audit_log 
    WHERE request_id = '7c79fd7a';"
    ```
-   *Salida:* Devuelve el árbol de deducción lógica, los tokens activos instanciados en el bitvector y la fórmula causal que motivó el veredicto.
+   *Output:* Returns the logical deduction tree, active bitvector tokens, and causal theorem governing the decision.
 
-3. **Ver las anomalías novedosas pendientes de simplificación con la nube (`exactor.tech`):**
+3. **Check unobserved pattern anomalies awaiting cloud Boolean minimization (`exactor.tech`):**
    ```bash
    sqlite3 /var/lib/exactor/waf_ledger.db "
    SELECT count(*) FROM novel_anomalies WHERE status = 'PENDING';"
@@ -289,12 +289,12 @@ El daemon registra de forma asíncrona no bloqueante cada evento en la base de d
 
 ---
 
-### Capa 4: Telemetría y Métricas en Tiempo Real (Endpoint :9002)
-El WAF expone métricas operativas instantáneas a través de su endpoint interno de administración:
+### Layer 4: Real-Time Telemetry and Metrics (Endpoint :9002)
+The firewall exposes operational telemetry via its internal administrative endpoint:
 ```bash
 curl -s http://127.0.0.1:9002/api/waf/metrics | jq .
 ```
-**Ejemplo de telemetría de producción:**
+**Production Telemetry Sample:**
 ```json
 {
   "total_requests": 25420,
@@ -310,58 +310,58 @@ curl -s http://127.0.0.1:9002/api/waf/metrics | jq .
 
 ---
 
-### Capa 5: Consola Operativa en Terminal (`exactor-top` y `exactor-rules`)
+### Layer 5: Terminal Operational Suite (`guardian-top` and `guardian-rules`)
 
-Para la administración in situ y observabilidad sin depender de navegadores externos, se implementó una suite completa en terminal basada en `curses` (con modo dual CLI):
+For on-server administration and observability without external browsers, Guardian WAF provides a comprehensive terminal suite based on `curses` with CLI fallbacks:
 
-1. **`exactor-top` (Monitor Forense en Tiempo Real):**
-   - Inspirado en `htop` / `btop`.
-   - Visualiza en vivo las peticiones inspeccionadas, latencias percentiles (P95, P99), distribución de ataques y estado del ring buffer de tasa temporal.
-   - Permite navegar con las flechas y presionar `[ENTER]` para inspeccionar el árbol sintáctico (AST) y la deducción matemática formal en LaTeX de cualquier petición bloqueada.
+1. **`guardian-top` (Real-Time Forensic Monitor):**
+   - Inspired by `htop` / `btop`.
+   - Real-time display of inspected traffic, percentile latencies (P95, P99), attack distributions, and sliding window rate limiter status.
+   - Arrow-key navigation with `[ENTER]` to inspect AST token structures and formal LaTeX causal proofs.
    ```bash
-   exactor-top
+   python exactor-top.py
    ```
 
-2. **`exactor-rules` (Centro de Control de Reglas e Islas Modulares):**
-   - Interfaz interactiva TUI para gestión en caliente sin reiniciar el WAF.
-   - **Gestión de Islas de Certeza:** Conmuta al instante escudos modulares (`[ESPACIO]`):
-     - `wordpress_shield`: Bloqueo inmediato de escaneos a `/wp-admin`, `/wp-login.php`, `xmlrpc.php` (se apaga si el cliente aloja WordPress legítimo).
-     - `exposure_shield`: Detección de sondeos a `/.env`, `/.git`, `phpMyAdmin`, backups SQL.
-     - `framework_shield`: Prevención de ejecución remota en Log4j/JNDI, Spring SpEL y Laravel.
-   - **Reglas de Negocio del Cliente:** Añade (`[A]`), conmuta (`[T]`), visualiza (`[E]`) o elimina (`[D]`) reglas de control de acceso (rutas, métodos permitidos, whitelists de IP, encabezados obligatorios y cuotas de payload).
-   - **Simulador SAT en Vivo (`[P]`):** Ejecuta pruebas de peticiones HTTP en tiempo real contra el motor local, arrojando veredicto, regla disparada y tiempo exacto en microsegundos.
-   - **Persistencia Dual:** Actualiza la memoria caliente vía REST API (`/api/waf/rules/customer`) y persiste de forma permanente en `waf_config.toml` (`[S]`).
+2. **`guardian-rules` (Interactive Rule & Protection Island Manager):**
+   - Interactive TUI for hot reconfiguration without restarting the daemon.
+   - **Certainty Islands Management:** Toggle modular security shields instantly (`[SPACE]`):
+     - `wordpress_shield`: Drops scanner reconnaissance targeting `/wp-admin`, `/wp-login.php`, `xmlrpc.php` (disable if hosting legitimate WordPress).
+     - `exposure_shield`: Blocks discovery probes targeting `/.env`, `/.git`, `phpMyAdmin`, and database dumps.
+     - `framework_shield`: Prevents remote code execution targeting Log4j/JNDI, Spring SpEL, and Laravel Ignition.
+   - **Customer Business Rules:** Add (`[A]`), toggle (`[T]`), view (`[E]`), or delete (`[D]`) access control rules (routes, whitelisted methods, IP restrictions, mandatory headers, and payload ceilings).
+   - **Live SAT Simulator (`[P]`):** Tests live HTTP payloads against local invariants, reporting verdict, triggered rule, and exact latency in microseconds.
+   - **Dual Persistence:** Hot-reloads running daemon memory via REST API (`/api/waf/rules/customer`) and persists to `waf_config.toml` (`[S]`).
    ```bash
-   exactor-rules
+   python exactor-rules.py
    ```
 
 ---
 
-### Runbook: Matriz de Triage Rápido ante Errores (SRE / Soporte)
+### Runbook: SRE Quick Triage Matrix
 
-| Código HTTP | Diagnóstico Rápido | Causa Probable | Acción Correctiva Inmediata |
+| HTTP Status | Quick Diagnosis | Probable Cause | Immediate Remediation |
 | :--- | :--- | :--- | :--- |
-| **`403 Forbidden`** | Bloqueo perimetral del WAF | Ataque real detectado o regla hiper-estricta (falso positivo). | Revisar `X-WAF-Rule`. Consultar `journalctl -u exactor-waf -n 20` para ver regla y `request_id`. |
-| **`502 Bad Gateway`** | Falla de conexión con upstream | La aplicación backend (`:5000`, `:8080`, `:8090`) está apagada. | Verificar servicios con `sudo ss -tulpn` y reiniciar el backend correspondiente. |
-| **`500 Internal Error`** | Error en subpetición WAF | Socket Unix `/var/run/exactor/waf.sock` inaccesible o sin permisos. | Comprobar permisos del socket: `ls -la /var/run/exactor/waf.sock` (debe ser `www-data:www-data 0775`). |
-| **`504 Timeout`** | Agotamiento de socket | El body de la petición está siendo drenado por una subpetición. | Verificar que `location = /_waf_verify` contenga `proxy_pass_request_body off;`. |
+| **`403 Forbidden`** | Perimeter drop by WAF | Confirmed attack or overly strict policy rule. | Check `X-WAF-Rule`. Inspect `journalctl -u exactor-waf -n 20` for rule ID and `request_id`. |
+| **`502 Bad Gateway`** | Upstream connection failure | Backend service (`:5000`, `:8080`, `:8090`) is inactive. | Verify services with `sudo ss -tulpn` and restart target backend. |
+| **`500 Internal Error`** | Subrequest failure | Unix socket `/var/run/exactor/waf.sock` inaccessible or bad permissions. | Check permissions: `ls -la /var/run/exactor/waf.sock` (must be `www-data:www-data 0775`). |
+| **`504 Timeout`** | Socket starvation | Request body being consumed by subrequest. | Verify that `location = /_waf_verify` includes `proxy_pass_request_body off;`. |
 
-#### Protocolo de Desescalada de Emergencia (Dry-Run / Monitor Mode):
-Si en algún momento se sospecha de un bloqueo crítico que afecte operaciones comerciales legítimas y se requiere investigar sin detener el tráfico:
-1. Editar `/etc/exactor/waf_config.toml`:
+#### Emergency De-escalation Protocol (Dry-Run / Monitor Mode):
+If a critical blocking event is suspected of impacting legitimate commercial traffic and immediate triage is required without dropping requests:
+1. Update `/etc/exactor/waf_config.toml`:
    ```toml
    mode = "monitor"
    ```
-2. Reiniciar el WAF:
+2. Restart Guardian WAF service:
    ```bash
    sudo systemctl restart exactor-waf
    ```
-   *Efecto:* El WAF seguirá evaluando el tráfico y registrando todas las violaciones en el journal y la base de datos, pero **permitirá el paso del tráfico al backend con HTTP 200**, eliminando cualquier disrupción mientras se calibra la regla.
+   *Effect:* The firewall continues evaluating traffic and recording all violations to the journal and SQLite ledger, but **permits requests upstream with HTTP 200**, eliminating disruption while rules are calibrated.
 
 ---
 
-## 7. Conclusiones y Lecciones de Arquitectura
+## 7. Conclusions and Architectural Lessons
 
-1. **La heurística ingenua es el enemigo del WAF:** Evaluar banderas booleanas aisladas sin considerar la estructura gramatical (ligadura de tokens) genera fricción operativa inaceptable. La evolución de la regla `SAT-SSRF-01` demostró que la seguridad determinista requiere sintaxis contextualmente consciente.
-2. **El contrato de subpetición de Nginx es asimétrico:** Nginx maneja los flujos de lectura de manera no reentrante para subpeticiones. La inspección perimetral de cabeceras, rutas y metadatos es el paradigma más seguro y rápido para arquitecturas desacopladas.
-3. **Validación en Fuego Real:** Ningún benchmark sintético sustituye el despliegue sobre peticiones reales de navegadores modernos con sus múltiples cabeceras (`Referer`, `Origin`, `Sec-Fetch-*`). Este caso de estudio consolida a EXACTOR WAF Guardian como una solución lista para grado corporativo.
+1. **Naive heuristics are the enemy of web application firewalls:** Evaluating isolated Boolean flags without considering syntactic token binding causes severe operational friction. The evolution of `SAT-SSRF-01` demonstrates that deterministic security requires context-aware grammars.
+2. **Nginx subrequest contracts are asymmetric:** Nginx handles request body streams non-reentrantly during internal subrequests. Perimeter inspection of headers, URIs, and metadata provides the cleanest and fastest architecture for decoupled reverse proxies.
+3. **Live Traffic Validation is Irreplaceable:** Synthetic laboratory benchmarks cannot replicate the diversity of modern web browsers with their complex header suites (`Referer`, `Origin`, `Sec-Fetch-*`). This deployment cements Guardian WAF as an enterprise-ready, sub-millisecond cyber-defense platform.
