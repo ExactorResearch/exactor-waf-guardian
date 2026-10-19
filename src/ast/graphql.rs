@@ -51,8 +51,14 @@ impl GraphqlAstAnalyzer {
             return tokens;
         }
 
-        // Extract raw query string for AST inspection
-        let raw_query = if let Ok(parsed_json) = serde_json::from_str::<serde_json::Value>(body) {
+        // Fast-path: If not GraphQL endpoint and body lacks "query", bypass expensive JSON AST parsing
+        let raw_query = if !is_gql_path && !has_query_in_body {
+            if has_query_param {
+                query_str.to_string()
+            } else {
+                body.to_string()
+            }
+        } else if let Ok(parsed_json) = serde_json::from_str::<serde_json::Value>(body) {
             if let Some(arr) = parsed_json.as_array() {
                 let has_gql = arr.iter().any(|item| item.get("query").is_some());
                 if !has_gql && !is_gql_path {
@@ -73,14 +79,12 @@ impl GraphqlAstAnalyzer {
             } else {
                 return tokens; // Standard JSON payload without query field
             }
+        } else if has_query_param {
+            query_str.to_string()
         } else {
-            // Check if query is in URL query parameters
-            if has_query_param {
-                query_str.to_string()
-            } else {
-                body.to_string()
-            }
+            body.to_string()
         };
+
 
         tokens.is_graphql = true;
 
@@ -167,3 +171,81 @@ impl GraphqlAstAnalyzer {
         max_depth
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_benign_rest_json_fast_path() {
+        // Standard REST JSON payload on non-GraphQL endpoint
+        let path = "/api/v1/orders";
+        let body = r#"{"order_id": 48291, "status": "shipped", "items": [{"id": 1}, {"id": 2}]}"#;
+        let query_str = "";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(!tokens.is_graphql, "Benign REST JSON must bypass GraphQL analysis");
+        assert!(!tokens.has_batching);
+        assert!(!tokens.has_introspection);
+    }
+
+    #[test]
+    fn test_graphql_query_in_json_body() {
+        let path = "/api";
+        let body = r#"{"query": "query GetUser { user(id: 1) { id name email } }"}"#;
+        let query_str = "";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(tokens.is_graphql, "Valid GraphQL query in JSON body must be recognized");
+        assert_eq!(tokens.ast_depth, 3);
+    }
+
+    #[test]
+    fn test_graphql_raw_body_on_endpoint() {
+        let path = "/graphql";
+        let body = "{ users { id name } }";
+        let query_str = "";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(tokens.is_graphql);
+        assert_eq!(tokens.ast_depth, 2);
+    }
+
+    #[test]
+    fn test_graphql_query_param() {
+        let path = "/api/search";
+        let body = "";
+        let query_str = "query={ hero { name } }";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(tokens.is_graphql);
+    }
+
+    #[test]
+    fn test_graphql_batch_array_overload() {
+        let path = "/api/graphql";
+        let body = r#"[
+            {"query": "{ user(id: 1) { name } }"},
+            {"query": "{ user(id: 2) { name } }"}
+        ]"#;
+        let query_str = "";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(tokens.is_graphql);
+        assert!(tokens.has_batching, "Batch array with >1 queries must trigger batching token");
+        assert!(tokens.active_tokens.contains(&"GRAPHQL_BATCH_ARRAY_OVERLOAD".to_string()));
+    }
+
+    #[test]
+    fn test_graphql_introspection_probe() {
+        let path = "/graphql";
+        let body = r#"{"query": "{ __schema { types { name } } }"}"#;
+        let query_str = "";
+
+        let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
+        assert!(tokens.is_graphql);
+        assert!(tokens.has_introspection);
+        assert!(tokens.active_tokens.contains(&"GRAPHQL_INTROSPECTION_PROBE".to_string()));
+    }
+}
+

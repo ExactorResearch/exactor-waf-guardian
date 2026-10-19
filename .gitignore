@@ -30,3 +30,5 @@ target/
 *.db
 *.db-wal
 *.db-shm
+graphify-out/
+
