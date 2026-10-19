@@ -70,7 +70,7 @@ envoy_ext_authz_addr = "0.0.0.0:9002"
 
 # SafeLine PostgreSQL instance URL to stream live incident proofs directly into SafeLine Console
 # safeline_pg_url = "postgres://safeline-ce:safeline-ce@safeline-pg:5432/safeline-ce?sslmode=disable"
-
+    
 # ==============================================================================
 # MODULAR CERTAINTY ISLANDS (ISLAS DE CERTEZA)
 # ==============================================================================
