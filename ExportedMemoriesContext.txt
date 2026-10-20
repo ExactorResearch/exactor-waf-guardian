@@ -1,0 +1,79 @@
+# Exported Memories & Context
+
+## Instructions
+[2026-10-03] - Esquema de Licenciamiento, Planes y Consumo (SU): Consulta y respeta siempre las especificaciones detalladas en [.agent/rules/pricing_and_licensing.md](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md).
+[2026-10-03] - Tope en 128 Variables para SaaS: 256+ variables nunca es autoservicio SaaS; se cotiza y gestiona exclusivamente como Proyecto de Expansión de Ingeniería (HPC dedicado / Bare Metal).
+[2026-10-03] - La expansión más allá de las 128 variables (hasta 256 o más) NO se ofrece como un límite de software estándar dentro del SaaS público. Se gestiona estrictamente como un Proyecto de Expansión de Ingeniería, cotizado a medida bajo demanda corporativa: involucra asignación de clusters HPC dedicados (Bare Metal en nube privada u On-Premise) y soporte directo de los arquitectos del motor de síntesis.
+[2026-10-12] - No des respuestas superficiales ni genéricas. Antes de darte por satisfecho con un plan, analiza el contexto, haz preguntas estratégicas si te falta información clave y propón siempre un enfoque basado en datos y conversión.
+[2026-10-12] - Primero haz preguntas: Si te pido algo complejo y te falta información de mi producto, presupuesto, público o canal, hazme máximo 3 preguntas puntuales antes de redactar la solución definitiva.
+[2026-10-12] - Formato claro: Utiliza listas con viñetas, tablas o estructuras jerárquicas (H1, H2, H3) para que sea fácil de leer y ejecutar.
+[2026-10-12] - Tono de voz: Analítico, directo, orientado a la acción y adaptado a la identidad de mi marca.
+[2026-10-12] - Evita la paja: Ve directo al grano sin introducciones largas ni felicitaciones innecesarias.
+[2026-10-12] - Cuando te dé una instrucción, respóndeme con esta estructura: 1. Diagnóstico rápido / Enfoque estratégico. 2. Propuesta principal o contenido solicitado. 3. Métricas clave a vigilar para saber si funciona. 4. Siguiente paso recomendado o test A/B sugerido.
+
+## Identity
+[unknown] - Name: Juan Carlos López González.
+[unknown] - Age & Year of Birth: Born in 1967 (58-59 years old as of 2026); primary contact: jlopez1967@gmail.com.
+[unknown] - Location & Timezone: Latin America / Southern Cone (active system timezone UTC-3).
+[unknown] - Education & Background: Systems engineering, discrete mathematics, digital circuit synthesis (VHDL/Verilog/RTL), propositional logic, and quantitative finance.
+[unknown] - Languages: Spanish (native), English (technical and professional fluency).
+[unknown] - Personal Interests: Mathematical determinism, epistemological foundations of computing ("Glass Box AI"), Boolean algebra, high-frequency algorithmic trading, logic puzzles (Sudoku, Minesweeper, ARC-AGI).
+
+## Career
+[unknown] - Founder, Chief Architect & Lead Researcher at Exactor / Rush Development Team, directing a monorepo ecosystem of 40+ interconnected projects in neuro-symbolic AI and exact logic synthesis.
+[unknown] - Author of foundational treatises including "La Revolución Determinista: El Libro Maestro del Ecosistema Rush", "La Máquina Exacta", and "The Death of the Black Box".
+[unknown] - Quantitative Systems Engineer & Algorithmic Trading Architect designing automated execution engines, genetic optimizers, and two-tier risk management suites (Watchtower) for MetaTrader 5 and proprietary trading firms (The5ers).
+[unknown] - Embedded Systems & Hardware Architect pioneering the "Zero-to-Silicon" methodology, compiling boolean logic into bare-metal ESP32 microcontrollers and FPGA-synthesizable RTL.
+[unknown] - General Skill Areas: Boolean function minimization algorithms (O(n) complexity, XOR support), Rust systems programming, Python ML/AI (PyTorch, differentiable binarization), MQL5 quantitative development, Envoy Proxy data-plane integration (ext_authz), and regulatory AI auditing (EU AI Act 2024/1689).
+
+## Projects
+[2025-11-21] - exactor-core-v128: 128-variable high-capacity Boolean minimization engine in Rust with O(n) complexity and native XOR support; active production core; key decision to scale beyond classical 64-variable boundaries using high-performance bitvectors.
+[2025-11-22] - exactor-web-esp32: Embedded no-std web server and logic solver running on an ultra-low-cost ESP32-C6 RISC-V microcontroller with Embassy and esp-wifi; active; key decision to achieve local edge inference without cloud reliance ("Zero-to-Silicon").
+[2025-11-22] - TinyML: Embedded machine learning benchmark and firmware suite for microcontrollers (ESP32-C6) comparing exact logic minimization against SymPy; active reference testbed.
+[2025-11-27] - exactor-lpu / lpu_protocol: Hardware-software protocol and interface for dedicated Logic Processing Units (LPU) communicating over UART/serial; active hardware interface prototype.
+[2025-12-06] - desktop: Cross-platform native desktop application for Exactor built with Tauri, Rust, and React/Vite; active desktop client.
+[2025-12-07] - exactor-cloud-service: Production multi-tenant cloud API built with Axum, Tokio, and SQLite WAL mode supporting JWT, PayPal billing, token metering, and automated Swagger docs; active production backend.
+[2025-12-20] - exactor-mcp: Model Context Protocol (MCP) server over STDIO enabling AI coding assistants to invoke boolean logic minimization and dataset analysis tools; active developer tool.
+[2025-12-25] - exactorweb: Production web frontend for the Exactor platform built with React 18, TypeScript, and Vite featuring dashboards, formula consoles, and visual logic graphers; active.
+[2025-12-28] - bnn-exactor-optimizer: Binary Neural Network (BNN) optimizer ingesting ONNX models and synthesizing optimized Verilog RTL logic via Exactor boolean minimization; active research pipeline.
+[2025-12-30] - exactor-fx: Full-stack algorithmic Forex platform combining Rust backend, React frontend, and market data fetchers; active trading framework.
+[2026-01-10] - featureexpand: PyPI library (`pip install featureexpand`) providing Scikit-learn transformers that expand numeric features into optimal boolean logic intervals; published & active.
+[2026-01-11] - tensor-logic: Neuro-symbolic bridge translating discrete boolean formulas into differentiable PyTorch modules for soft-logic fine-tuning based on arXiv:2510.12269; active research module.
+[2026-01-14] - MT5_Genetic_Trader: Comprehensive SMLE Pro trading suite for MetaTrader 5 featuring 4-layer architecture, 7 technical indicator batch traders, genetic parameter optimization, and Watchtower risk management for prop firms; active production trading system.
+[2026-01-18] - exactor-rules-engine: Enterprise decision rules discovery engine applied to churn prediction and customer behavior analysis; active business intelligence engine.
+[2026-01-24] - segmented-ml-engine: Automated ML segmentation and rule simplification engine with temperature-controlled precision and coverage balancing; active.
+[2026-02-06] - ecommerce-mcp: Analytical MCP server combining Rust host and Python data engine for smart binarization, entropy diagnostics, and micro-segment discovery in e-commerce; active.
+[2026-02-15] - micromind-ai / micromind-ai-v2: Autonomous multi-agent cognitive architecture and transparency reporting platform featuring embedded SMLE papers and ARFF datasets; active platform.
+[2026-03-14] - smle-paper: Reproducible scientific publication and benchmark repository titled "The Death of the Black Box" documenting symbolic machine learning superiority; published/active paper.
+[2026-03-24] - smle-python: Official PyPI distribution of the Symbolic Machine Learning Engine (`pip install smle`) offering Scikit-learn compatible whitebox classifiers; published & active.
+[2026-04-04] - forex-lag-engine: Real-time Forex trading engine with interactive dashboard, MLOps shadow execution mode, and multi-currency portfolio management; active.
+[2026-05-02] - binaryeml: Whitebox differentiable binarization library (`pip install eml-whitebox`) leveraging the continuous EML operator e^x - ln(y) to discretize neural networks; published & active.
+[2026-05-02] - smle: Flagship neuro-symbolic machine learning core implementing DifferentiableBinarizer, EMLOrchestrator, and automated truth-table rule extraction; active core brain.
+[2026-05-30] - industrial_iot_smle: Industry 4.0 predictive maintenance proof-of-concept modeling motor degradation via Markov chains and compiling logic directly to ESP32 firmware; active IoT prototype.
+[2026-06-05] - telepathy (telepathy_gradient_free / telepathy_live_bot): Gradient-free reinforcement and contextual cognitive agent framework applied to prediction markets and live algorithmic trading; active.
+[2026-06-13] - TelepathicBrain / CascadeMetaClassifier: Advanced ensemble meta-classifier and symbolic memory orchestration framework for complex multimodal reasoning; active.
+[2026-07-16] - exactor_bio: Bioinformatics application of symbolic boolean minimization for genomic and bio-molecular interaction modeling; active research.
+[2026-07-25] - insightlogic-app: Business analytics application for visual inspection of formal logic rules and explainable decision trees; active.
+[2026-08-31] - forex-alpha-engine: Institutional-grade automated Forex engine engineered for 30 concurrent strategies with strict prop firm drawdown controls; active in production staging.
+[2026-09-20] - exactor-forex-coldstart: Cold-start predictive engine and strategy bootstrapping system for financial currency markets; active.
+[2026-09-27] - exactor-quantum: Experimental research mapping boolean satisfaction and logic minimization into quantum gate representations; active experimental project.
+[2026-09-29] - exactor-jev: Pure symbolic reasoning agent exploring Jevons-style logical piano deduction within propositional logic; active research.
+[2026-10-09] - exactor-minesweeper & exactor-sudoku-arena: Deterministic logic puzzle solvers demonstrating zero-backtracking certainty through SAT solving; active demonstration benchmarks.
+[2026-10-09] - Guardian WAF (exactor-waf-guardian): Deterministic SAT-based Web Application Firewall and reverse proxy running at microsecond line speed directly inside Envoy Proxy data plane via Certainty Islands; active production release (v0.2.0, branch hacia-el-mercado).
+[2026-10-10] - exactor-epistemic-pisa: Formal epistemological verification framework validating non-contradiction proofs in propositional logic; active.
+[2026-10-11] - exactor-engram-memory: Cognitive engram memory ledger providing deterministic action tracing and audit persistence for autonomous agents; active.
+[2026-10-14] - exactor-route-matrix: Matrix routing and spatial graph optimization engine using boolean logic invariants; active.
+[2026-10-15] - exactor-compliance: Enterprise compliance platform automating technical documentation, bias elimination, and mathematical conformity under EU AI Act 2024/1689; active B2B product.
+[2026-10-15] - exactor-xai: Explainable AI auditing engine generating formal LaTeX proofs, Causal Graphs, and Transparency Scores for black-box ML models; active.
+[2026-10-16] - exactor-core: The fundamental Rust boolean minimization engine with O(n) complexity, 64-variable capacity, and direct Verilog/VHDL RTL synthesis; foundational active core.
+[2026-10-17] - envoy-sat-waf-partner-kit: Partner distribution and integration kit packaging Guardian WAF with Envoy Proxy for enterprise edge deployments; active deployment kit.
+[2026-10-18] - exactor-soft-fpga: Software-emulated and FPGA-synthesizable hardware accelerator executing exact boolean satisfaction rules on bare silicon; active hardware architecture.
+
+## Preferences
+[unknown] - Deep commitment to "Glass Box AI": machine learning models must be transparent, verifiable, and explainable via exact propositional logic rather than unexplainable probabilistic approximations.
+[unknown] - Preference for standalone, zero-dependency release binaries compiled with native Rust and musl libc, eliminating runtime dependencies and complex environment setup on target servers.
+[unknown] - Working-style preference for direct, concise, and analytical communication ("evita la paja"), going straight to the core problem without fluff, preamble, or superficial flattery.
+[unknown] - Strict insistence on mathematical determinism and formal invariance in cybersecurity (SAT solvers and Certainty Islands) rather than fragile regex or hallucinating LLM heuristics.
+[unknown] - "Zero-to-Silicon" philosophy: algorithmic logic designed in high-level software must be architected so it can compile down to low-cost embedded microcontrollers (ESP32-C6) or synthesizable hardware RTL (Verilog/VHDL).
+[unknown] - Strict, non-negotiable architectural boundaries: public SaaS tiers cap at 128 variables; scaling to 256+ variables is strictly treated as a bespoke Engineering Expansion Project (dedicated HPC / bare metal).
+[unknown] - Quantitative risk management preference in financial systems: institutional drawdown preservation, MAE/MFE survival stops, and signal decay half-life prioritized over aggressive, unhedged yields.
