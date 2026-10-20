@@ -129,7 +129,8 @@ impl FeatureBinarizer {
             fv.set(20);
         }
 
-        if req.full_inspectable_string().contains('\0') || req.full_inspectable_string().contains("%00") {
+        let inspectable = req.full_inspectable_string();
+        if inspectable.contains('\0') || inspectable.contains("%00") {
             fv.set(21);
         }
 

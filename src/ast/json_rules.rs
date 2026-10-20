@@ -63,10 +63,9 @@ impl JsonStrictAnalyzer {
         }
 
         // Direct substring check as ultra-fast fallback
-        let lower = body.to_ascii_lowercase();
-        if lower.contains("\"__proto__\"") || lower.contains("'__proto__'") {
-            tokens.has_proto_pollution = true;
-            if !tokens.active_tokens.contains(&"JSON_PROTOTYPE_POLLUTION_ATTR".to_string()) {
+        if !tokens.active_tokens.iter().any(|s| s == "JSON_PROTOTYPE_POLLUTION_ATTR") {
+            if body.contains("__proto__") || body.to_ascii_lowercase().contains("__proto__") {
+                tokens.has_proto_pollution = true;
                 tokens.active_tokens.push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
             }
         }

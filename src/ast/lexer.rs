@@ -420,7 +420,8 @@ impl AstLexer {
             tokens.has_sensitive_file_probe = true;
             tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
         }
-        if RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&path_and_query) || RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&req.body) {
+        let re_framework = RE_FRAMEWORK_EXPLOIT.get().unwrap();
+        if re_framework.is_match(&path_and_query) || (!req.body.is_empty() && re_framework.is_match(&req.body)) {
             tokens.has_framework_exploit_probe = true;
             tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
         }

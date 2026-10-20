@@ -256,6 +256,7 @@ class ExactorWAFSATEngine:
         d2 = urllib.parse.unquote_plus(d1)
         raw_strings.extend([d1, d2])
         combined_text = " \n ".join(raw_strings)
+        combined_text_lower = combined_text.lower()
 
         matched_rules: List[DeductionRule] = []
         active_tokens: List[str] = []
@@ -299,7 +300,7 @@ class ExactorWAFSATEngine:
         # ---------------------------------------------------------
         # ISLAND 2: DOM Context & Execution Invariant (ISLAND-XSS)
         # ---------------------------------------------------------
-        if self._xss_script_pattern.search(combined_text) or ("<script" in combined_text.lower() and "</script" in combined_text.lower()):
+        if self._xss_script_pattern.search(combined_text) or ("<script" in combined_text_lower and "</script" in combined_text_lower):
             matched_rules.append(self.KNOWN_RULES["SAT-XSS-01"])
             active_tokens.extend(["TAG_OPEN", "SCRIPT_ELEMENT", "DOM_EXEC"])
             active_islands.append("ISLAND-XSS")
@@ -326,7 +327,7 @@ class ExactorWAFSATEngine:
             active_islands.append("ISLAND-RCE")
             deduction_steps.append("[ISLAND-RCE] POSIX/PowerShell shell chaining metacharacter operator coupled with executable binary detected.")
 
-        if self._subshell_pattern.search(combined_text) and any(b in combined_text.lower() for b in ["cat", "curl", "wget", "id", "whoami", "uname", "ls", "bash", "sh"]):
+        if self._subshell_pattern.search(combined_text) and any(b in combined_text_lower for b in ["cat", "curl", "wget", "id", "whoami", "uname", "ls", "bash", "sh"]):
             matched_rules.append(self.KNOWN_RULES["SAT-RCE-02"])
             active_tokens.extend(["SUBSHELL_EXPANSION", "COMMAND_SUBSTITUTION"])
             active_islands.append("ISLAND-RCE")
@@ -356,7 +357,7 @@ class ExactorWAFSATEngine:
         # ---------------------------------------------------------
         # ISLAND 5: Network Perimeter & Cloud Metadata (ISLAND-SSRF)
         # ---------------------------------------------------------
-        if (("http://" in combined_text.lower() or "https://" in combined_text.lower() or "gopher://" in combined_text.lower() or "file://" in combined_text.lower() or "dict://" in combined_text.lower())
+        if (("http://" in combined_text_lower or "https://" in combined_text_lower or "gopher://" in combined_text_lower or "file://" in combined_text_lower or "dict://" in combined_text_lower)
                 and self._ssrf_metadata_pattern.search(combined_text)):
             matched_rules.append(self.KNOWN_RULES["SAT-SSRF-01"])
             active_tokens.extend(["URI_REDIRECT_PARAM", "CLOUD_METADATA_ENDPOINT", "RFC1918_TARGET"])

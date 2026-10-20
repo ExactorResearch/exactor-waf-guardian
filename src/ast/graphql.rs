@@ -197,7 +197,7 @@ mod tests {
 
         let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
         assert!(tokens.is_graphql, "Valid GraphQL query in JSON body must be recognized");
-        assert_eq!(tokens.ast_depth, 3);
+        assert_eq!(tokens.max_depth, 2);
     }
 
     #[test]
@@ -208,7 +208,7 @@ mod tests {
 
         let tokens = GraphqlAstAnalyzer::analyze(path, body, query_str);
         assert!(tokens.is_graphql);
-        assert_eq!(tokens.ast_depth, 2);
+        assert_eq!(tokens.max_depth, 2);
     }
 
     #[test]

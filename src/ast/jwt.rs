@@ -22,9 +22,7 @@ impl JwtTamperingAnalyzer {
         for (k, v) in headers {
             let kl = k.to_ascii_lowercase();
             if kl == "authorization" {
-                if let Some(bearer) = v.strip_prefix("Bearer ") {
-                    potential_tokens.push(bearer.trim());
-                } else if let Some(bearer) = v.strip_prefix("bearer ") {
+                if let Some(bearer) = v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer ")) {
                     potential_tokens.push(bearer.trim());
                 } else {
                     potential_tokens.push(v.trim());
@@ -63,14 +61,15 @@ impl JwtTamperingAnalyzer {
 
     fn inspect_single_jwt(raw_jwt: &str, tokens: &mut JwtTokens) {
         let parts: Vec<&str> = raw_jwt.split('.').collect();
+        let parts_len = parts.len();
         // A JWT must have at least 2 parts (header.payload) or 3 parts (header.payload.signature)
-        if parts.len() < 2 {
+        if parts_len < 2 {
             return;
         }
 
         let header_b64 = parts[0];
         let _payload_b64 = parts[1];
-        let sig_part = if parts.len() >= 3 { parts[2] } else { "" };
+        let sig_part = if parts_len >= 3 { parts[2] } else { "" };
 
         // Attempt Base64URL decode of header
         if let Some(header_bytes) = Self::base64url_decode(header_b64) {
@@ -78,20 +77,25 @@ impl JwtTamperingAnalyzer {
                 tokens.is_jwt = true;
 
                 // 1. Check Algorithm Confusion / `alg: "none"`
-                if let Some(alg) = header_json.get("alg").and_then(|a| a.as_str()) {
-                    let alg_lower = alg.to_ascii_lowercase();
-                    if alg_lower == "none" || alg.trim().is_empty() {
-                        tokens.has_alg_none = true;
-                        tokens.active_tokens.push("JWT_ALG_NONE_VULNERABILITY".to_string());
+                let alg_val = header_json.get("alg");
+                match alg_val.and_then(|a| a.as_str()) {
+                    Some(alg) => {
+                        let trimmed_alg = alg.trim();
+                        if trimmed_alg.is_empty() || trimmed_alg.eq_ignore_ascii_case("none") {
+                            tokens.has_alg_none = true;
+                            tokens.active_tokens.push("JWT_ALG_NONE_VULNERABILITY".to_string());
+                        }
                     }
-                } else if header_json.get("alg").is_none() {
-                    // Missing alg attribute
-                    tokens.has_alg_none = true;
-                    tokens.active_tokens.push("JWT_MISSING_ALG_FIELD".to_string());
+                    None if alg_val.is_none() => {
+                        // Missing alg attribute
+                        tokens.has_alg_none = true;
+                        tokens.active_tokens.push("JWT_MISSING_ALG_FIELD".to_string());
+                    }
+                    _ => {}
                 }
 
                 // 2. Check Missing Signature
-                if sig_part.trim().is_empty() || parts.len() == 2 {
+                if sig_part.trim().is_empty() {
                     tokens.has_missing_signature = true;
                     tokens.active_tokens.push("JWT_MISSING_SIGNATURE_PART".to_string());
                 }

@@ -40,10 +40,11 @@ impl GrpcProtobufAnalyzer {
 
         // 2. gRPC Protocol Framing Validation
         if is_grpc_ct && !body.is_empty() {
+            let body_len = body.len();
             // A valid gRPC frame requires at least 5 bytes:
             // 1 byte: compression flag (0x00 or 0x01)
             // 4 bytes: big-endian length of message
-            if body.len() < 5 {
+            if body_len < 5 {
                 tokens.has_grpc_smuggling = true;
                 tokens.active_tokens.push("GRPC_MALFORMED_TRUNCATED_FRAME".to_string());
             } else {
@@ -62,7 +63,7 @@ impl GrpcProtobufAnalyzer {
                     // Extremely large frame length (> 16MB) in inbound stream -> Memory exhaustion attempt
                     tokens.has_grpc_smuggling = true;
                     tokens.active_tokens.push("GRPC_FRAME_LENGTH_EXHAUSTION".to_string());
-                } else if body.len() != expected_total_frame && body.len() < expected_total_frame {
+                } else if body_len < expected_total_frame {
                     // Truncated body under declared frame size
                     tokens.has_grpc_smuggling = true;
                     tokens.active_tokens.push("GRPC_FRAME_STREAM_DESYNC_SMUGGLING".to_string());

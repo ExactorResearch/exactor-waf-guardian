@@ -153,7 +153,8 @@ impl SqliteLedger {
                 .collect::<Vec<_>>()
                 .join(",");
             let active_tokens_str = rec.proof.active_tokens.join(",");
-            let is_viol = if rec.proof.is_violation { 1 } else { 0 };
+            let is_violation = rec.proof.is_violation;
+            let is_viol = if is_violation { 1 } else { 0 };
 
             let _ = sqlx::query(
                 r#"
@@ -178,7 +179,7 @@ impl SqliteLedger {
             .execute(&mut *tx)
             .await;
 
-            if rec.proof.is_violation {
+            if is_violation {
                 let minterm_str = rec.minterm.to_string();
                 let bits_str = format!("{:#034x}", rec.minterm);
                 let _ = sqlx::query(

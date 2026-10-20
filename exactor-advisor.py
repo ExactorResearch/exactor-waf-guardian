@@ -642,13 +642,14 @@ class HumanApprovalAgent:
                 in_islands = False
                 replaced = False
                 for line in lines:
-                    if line.strip() == "[islands]":
+                    stripped = line.strip()
+                    if stripped == "[islands]":
                         in_islands = True
-                    elif in_islands and line.strip().startswith(k):
+                    elif in_islands and stripped.startswith(k):
                         new_lines.append(f"{k} = {v_str}")
                         replaced = True
                         continue
-                    elif in_islands and line.strip().startswith("["):
+                    elif in_islands and stripped.startswith("["):
                         in_islands = False
                     new_lines.append(line)
                 if not replaced:

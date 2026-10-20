@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WafConfig {
@@ -216,28 +215,22 @@ impl WafConfig {
     /// Loads configuration from file if exists, falling back to environment variables and defaults.
     pub fn load_or_default(path_opt: Option<&str>) -> Self {
         let mut cfg = if let Some(path) = path_opt {
-            if Path::new(path).exists() {
-                match std::fs::read_to_string(path) {
-                    Ok(content) => match toml::from_str::<WafConfig>(&content) {
-                        Ok(c) => c,
-                        Err(e) => {
-                            eprintln!("Warning: Failed to parse {}: {}. Using defaults.", path, e);
-                            WafConfig::default()
-                        }
-                    },
+            match std::fs::read_to_string(path) {
+                Ok(content) => match toml::from_str::<WafConfig>(&content) {
+                    Ok(c) => c,
                     Err(e) => {
-                        eprintln!("Warning: Failed to read {}: {}. Using defaults.", path, e);
+                        eprintln!("Warning: Failed to parse {}: {}. Using defaults.", path, e);
                         WafConfig::default()
                     }
+                },
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => WafConfig::default(),
+                Err(e) => {
+                    eprintln!("Warning: Failed to read {}: {}. Using defaults.", path, e);
+                    WafConfig::default()
                 }
-            } else {
-                WafConfig::default()
             }
-        } else if Path::new("waf_config.toml").exists() {
-            match std::fs::read_to_string("waf_config.toml") {
-                Ok(content) => toml::from_str(&content).unwrap_or_default(),
-                Err(_) => WafConfig::default(),
-            }
+        } else if let Ok(content) = std::fs::read_to_string("waf_config.toml") {
+            toml::from_str(&content).unwrap_or_default()
         } else {
             WafConfig::default()
         };
